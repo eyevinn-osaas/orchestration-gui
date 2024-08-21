@@ -1,0 +1,74 @@
+[
+  {
+    "name": "Camera1_Ingest",
+    "type": "camera",
+    "tags": {
+      "location": "stockholm"
+    },
+    "ingest_name": "9d9dd7f2-3759-4f18-8e48-f48ef60b8f81",
+    "ingest_source_name": "0"
+  },
+  {
+    "name": "Camera2_Ingest",
+    "type": "camera",
+    "tags": {
+      "location": "stockholm"
+    },
+    "ingest_name": "9d9dd7f2-3759-4f18-8e48-f48ef60b8f82",
+    "ingest_source_name": "0"
+  },
+  {
+    "name": "Microphone1_Ingest",
+    "type": "microphone",
+    "tags": {
+      "location": "stockholm"
+    },
+    "ingest_name": "9d9dd7f2-3759-4f18-8e48-f48ef60b8f83",
+    "ingest_source_name": "0"
+  },
+  {
+    "name": "Microphone2_Ingest",
+    "type": "microphone",
+    "tags": {
+      "location": "stockholm"
+    },
+    "ingest_name": "9d9dd7f2-3759-4f18-8e48-f48ef60b8f84",
+    "ingest_source_name": "0"
+  },
+  {
+    "name": "Graphics1_Ingest",
+    "type": "graphics",
+    "tags": {
+      "location": "stockholm"
+    },
+    "ingest_name": "9d9dd7f2-3759-4f18-8e48-f48ef60b8f85",
+    "ingest_source_name": "0"
+  },
+  {
+    "name": "Graphics2_Ingest",
+    "type": "graphics",
+    "tags": {
+      "location": "stockholm"
+    },
+    "ingest_name": "9d9dd7f2-3759-4f18-8e48-f48ef60b8f86",
+    "ingest_source_name": "0"
+  },
+  {
+    "name": "Camera1_Ingest",
+    "type": "camera",
+    "tags": {
+      "location": "umeå"
+    },
+    "ingest_name": "9d9dd7f2-3759-4f18-8e48-f48ef60b8f87",
+    "ingest_source_name": "0"
+  },
+  {
+    "name": "Microphone1_Ingest",
+    "type": "microphone",
+    "tags": {
+      "location": "umeå"
+    },
+    "ingest_name": "9d9dd7f2-3759-4f18-8e48-f48ef60b8f88",
+    "ingest_source_name": "0"
+  }
+]

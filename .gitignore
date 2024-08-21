@@ -1,0 +1,13 @@
+node_modules/
+.DS_Store
+.next
+.env
+.terraform/
+*.tfstate
+*.tfstate.*
+swagger.json
+.env.local
+gui-version.txt
+
+# TypeScript cache
+*.tsbuildinfo

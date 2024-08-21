@@ -1,0 +1,19 @@
+.checkbox {
+  & > span {
+    display: none;
+  }
+
+  &:hover > span {
+    display: block;
+  }
+}
+
+.numberInput {
+  &::-webkit-outer-spin-button,
+  &::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  -moz-appearance: textfield;
+}

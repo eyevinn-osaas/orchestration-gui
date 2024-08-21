@@ -1,0 +1,4 @@
+**/.next
+*.tfstate*
+scripts/mongosh-admin.js
+.vscode/*
