@@ -1,16 +1,18 @@
 'use client';
+
 import React, { useEffect, useState, KeyboardEvent } from 'react';
 import { PageProps } from '../../../../.next/types/app/production/[id]/page';
 import SourceListItem from '../../../components/sourceListItem/SourceListItem';
 import FilterOptions from '../../../components/filter/FilterOptions';
-import { AddSource } from '../../../components/addSource/AddSource';
+import { AddInput } from '../../../components/addInput/AddInput';
 import { IconX } from '@tabler/icons-react';
 import { useSources } from '../../../hooks/sources/useSources';
 import {
   AddSourceStatus,
   DeleteSourceStatus,
   SourceReference,
-  SourceWithId
+  SourceWithId,
+  Type
 } from '../../../interfaces/Source';
 import { useGetProduction, usePutProduction } from '../../../hooks/productions';
 import { Production } from '../../../interfaces/production';
@@ -40,8 +42,10 @@ import { RemoveSourceModal } from '../../../components/modal/RemoveSourceModal';
 import { useDeleteStream, useCreateStream } from '../../../hooks/streams';
 import { MonitoringButton } from '../../../components/button/MonitoringButton';
 import { useGetMultiviewPreset } from '../../../hooks/multiviewPreset';
-import { ISource } from '../../../hooks/useDragableItems';
 import { useMultiviews } from '../../../hooks/multiviews';
+import { useAddSource } from '../../../hooks/sources/useAddSource';
+import { useGetFirstEmptySlot } from '../../../hooks/useGetFirstEmptySlot';
+import { Select } from '../../../components/select/Select';
 
 export default function ProductionConfiguration({ params }: PageProps) {
   const t = useTranslate();
@@ -50,6 +54,9 @@ export default function ProductionConfiguration({ params }: PageProps) {
   const [sources] = useSources();
   const [filteredSources, setFilteredSources] = useState(
     new Map<string, SourceWithId>()
+  );
+  const [selectedValue, setSelectedValue] = useState<string>(
+    t('production.add_other_source_type')
   );
   const [addSourceModal, setAddSourceModal] = useState(false);
   const [removeSourceModal, setRemoveSourceModal] = useState(false);
@@ -88,10 +95,35 @@ export default function ProductionConfiguration({ params }: PageProps) {
   const [deleteSourceStatus, setDeleteSourceStatus] =
     useState<DeleteSourceStatus>();
 
+  // Create source
+  const [firstEmptySlot] = useGetFirstEmptySlot();
+  const [addSource] = useAddSource();
+
+  const isAddButtonDisabled =
+    selectedValue !== 'HTML' && selectedValue !== 'Media Player';
+
   useEffect(() => {
     refreshPipelines();
     refreshControlPanels();
   }, [productionSetup?.isActive]);
+
+  const addSourceToProduction = (type: Type) => {
+    const input: SourceReference = {
+      type: type,
+      label: type === 'html' ? 'HTML Input' : 'Media Player Source',
+      input_slot: firstEmptySlot(productionSetup)
+    };
+
+    if (!productionSetup) return;
+    addSource(input, productionSetup).then((updatedSetup) => {
+      if (!updatedSetup) return;
+      setProductionSetup(updatedSetup);
+      refreshProduction();
+      setAddSourceModal(false);
+      setSelectedSource(undefined);
+    });
+    setAddSourceStatus(undefined);
+  };
 
   const setSelectedControlPanel = (controlPanel: string[]) => {
     setProductionSetup((prevState) => {
@@ -218,6 +250,12 @@ export default function ProductionConfiguration({ params }: PageProps) {
 
     setFilteredSources(sources);
   }, [sources]);
+
+  useEffect(() => {
+    if (selectedValue === t('production.source')) {
+      setInventoryVisible(true);
+    }
+  }, [selectedValue]);
 
   const updatePreset = (preset: Preset) => {
     if (!productionSetup?._id) return;
@@ -362,6 +400,8 @@ export default function ProductionConfiguration({ params }: PageProps) {
       </li>
     );
   }
+
+  // Adding source to a production, both in setup-mode and in live-mode
   function getSourcesToDisplay(
     filteredSources: Map<string, SourceWithId>
   ): React.ReactNode[] {
@@ -376,50 +416,24 @@ export default function ProductionConfiguration({ params }: PageProps) {
               setSelectedSource(source);
               setAddSourceModal(true);
             } else if (productionSetup) {
-              const updatedSetup = addSetupItem(
-                {
-                  _id: source._id.toString(),
-                  label: source.ingest_source_name,
-                  input_slot: getFirstEmptySlot()
-                },
-                productionSetup
-              );
-              if (!updatedSetup) return;
-              setProductionSetup(updatedSetup);
-              putProduction(updatedSetup._id.toString(), updatedSetup).then(
-                () => {
-                  setAddSourceModal(false);
-                  setSelectedSource(undefined);
-                }
-              );
+              const input: SourceReference = {
+                _id: source._id.toString(),
+                type: 'ingest_source',
+                label: source.ingest_source_name,
+                input_slot: firstEmptySlot(productionSetup)
+              };
+              addSource(input, productionSetup).then((updatedSetup) => {
+                if (!updatedSetup) return;
+                setProductionSetup(updatedSetup);
+                setAddSourceModal(false);
+                setSelectedSource(undefined);
+              });
             }
           }}
         />
       );
     });
   }
-
-  const getFirstEmptySlot = () => {
-    if (!productionSetup) throw 'no_production';
-    let firstEmptySlot = productionSetup.sources.length + 1;
-    if (productionSetup.sources.length === 0) {
-      return firstEmptySlot;
-    }
-    for (
-      let i = 0;
-      i <
-      productionSetup.sources[productionSetup.sources.length - 1].input_slot;
-      i++
-    ) {
-      if (
-        !productionSetup.sources.some((source) => source.input_slot === i + 1)
-      ) {
-        firstEmptySlot = i + 1;
-        break;
-      }
-    }
-    return firstEmptySlot;
-  };
 
   const handleAddSource = async () => {
     setAddSourceStatus(undefined);
@@ -435,11 +449,10 @@ export default function ProductionConfiguration({ params }: PageProps) {
           )
         : false)
     ) {
-      const firstEmptySlot = getFirstEmptySlot();
       const result = await createStream(
         selectedSource,
         productionSetup,
-        firstEmptySlot ? firstEmptySlot : productionSetup.sources.length + 1
+        firstEmptySlot(productionSetup)
       );
       if (!result.ok) {
         if (!result.value) {
@@ -456,11 +469,12 @@ export default function ProductionConfiguration({ params }: PageProps) {
       }
       if (result.ok) {
         if (result.value.success) {
-          const sourceToAdd = {
+          const sourceToAdd: SourceReference = {
             _id: result.value.streams[0].source_id,
+            type: 'ingest_source',
             label: selectedSource.name,
             stream_uuids: result.value.streams.map((r) => r.stream_uuid),
-            input_slot: getFirstEmptySlot()
+            input_slot: firstEmptySlot(productionSetup)
           };
           const updatedSetup = addSetupItem(sourceToAdd, productionSetup);
           if (!updatedSetup) return;
@@ -479,12 +493,7 @@ export default function ProductionConfiguration({ params }: PageProps) {
   };
 
   const handleRemoveSource = async () => {
-    if (
-      productionSetup &&
-      productionSetup.isActive &&
-      selectedSourceRef &&
-      selectedSourceRef.stream_uuids
-    ) {
+    if (productionSetup && productionSetup.isActive && selectedSourceRef) {
       const multiviews =
         productionSetup.production_settings.pipelines[0].multiviews;
 
@@ -496,9 +505,60 @@ export default function ProductionConfiguration({ params }: PageProps) {
         )
       );
 
-      if (!viewToUpdate) {
-        if (!productionSetup.production_settings.pipelines[0].pipeline_id)
+      if (selectedSourceRef.stream_uuids) {
+        if (!viewToUpdate) {
+          if (!productionSetup.production_settings.pipelines[0].pipeline_id)
+            return;
+
+          const result = await deleteStream(
+            selectedSourceRef.stream_uuids,
+            productionSetup,
+            selectedSourceRef.input_slot
+          );
+
+          if (!result.ok) {
+            if (!result.value) {
+              setDeleteSourceStatus({
+                success: false,
+                steps: [{ step: 'unexpected', success: false }]
+              });
+            } else {
+              setDeleteSourceStatus({ success: false, steps: result.value });
+              const didDeleteStream = result.value.some(
+                (step) => step.step === 'delete_stream' && step.success
+              );
+              if (didDeleteStream) {
+                const updatedSetup = removeSetupItem(
+                  selectedSourceRef,
+                  productionSetup
+                );
+                if (!updatedSetup) return;
+                setProductionSetup(updatedSetup);
+                putProduction(updatedSetup._id.toString(), updatedSetup).then(
+                  () => {
+                    setSelectedSourceRef(undefined);
+                  }
+                );
+                return;
+              }
+            }
+            return;
+          }
+
+          const updatedSetup = removeSetupItem(
+            selectedSourceRef,
+            productionSetup
+          );
+
+          if (!updatedSetup) return;
+
+          setProductionSetup(updatedSetup);
+          putProduction(updatedSetup._id.toString(), updatedSetup).then(() => {
+            setRemoveSourceModal(false);
+            setSelectedSourceRef(undefined);
+          });
           return;
+        }
 
         const result = await deleteStream(
           selectedSourceRef.stream_uuids,
@@ -524,61 +584,12 @@ export default function ProductionConfiguration({ params }: PageProps) {
               );
               if (!updatedSetup) return;
               setProductionSetup(updatedSetup);
-              putProduction(updatedSetup._id.toString(), updatedSetup).then(
-                () => {
-                  setSelectedSourceRef(undefined);
-                }
-              );
+              putProduction(updatedSetup._id.toString(), updatedSetup);
               return;
             }
           }
           return;
         }
-
-        const updatedSetup = removeSetupItem(
-          selectedSourceRef,
-          productionSetup
-        );
-
-        if (!updatedSetup) return;
-
-        setProductionSetup(updatedSetup);
-        putProduction(updatedSetup._id.toString(), updatedSetup).then(() => {
-          setRemoveSourceModal(false);
-          setSelectedSourceRef(undefined);
-        });
-        return;
-      }
-
-      const result = await deleteStream(
-        selectedSourceRef.stream_uuids,
-        productionSetup,
-        selectedSourceRef.input_slot
-      );
-
-      if (!result.ok) {
-        if (!result.value) {
-          setDeleteSourceStatus({
-            success: false,
-            steps: [{ step: 'unexpected', success: false }]
-          });
-        } else {
-          setDeleteSourceStatus({ success: false, steps: result.value });
-          const didDeleteStream = result.value.some(
-            (step) => step.step === 'delete_stream' && step.success
-          );
-          if (didDeleteStream) {
-            const updatedSetup = removeSetupItem(
-              selectedSourceRef,
-              productionSetup
-            );
-            if (!updatedSetup) return;
-            setProductionSetup(updatedSetup);
-            putProduction(updatedSetup._id.toString(), updatedSetup);
-            return;
-          }
-        }
-        return;
       }
       const updatedSetup = removeSetupItem(selectedSourceRef, productionSetup);
       if (!updatedSetup) return;
@@ -601,6 +612,7 @@ export default function ProductionConfiguration({ params }: PageProps) {
     setSelectedSource(undefined);
     setDeleteSourceStatus(undefined);
   };
+
   return (
     <>
       <HeaderNavigation>
@@ -645,6 +657,7 @@ export default function ProductionConfiguration({ params }: PageProps) {
           <StartProductionButton
             refreshProduction={refreshProduction}
             production={productionSetup}
+            sources={sources}
             disabled={!selectedPreset ? true : false}
           />
         </div>
@@ -704,11 +717,7 @@ export default function ProductionConfiguration({ params }: PageProps) {
                   updateProduction={(updated) => {
                     updateProduction(productionSetup._id, updated);
                   }}
-                  onSourceUpdate={(
-                    source: SourceReference,
-                    sourceItem: ISource
-                  ) => {
-                    sourceItem.label = source.label;
+                  onSourceUpdate={(source: SourceReference) => {
                     updateSource(source, productionSetup);
                   }}
                   onSourceRemoval={(source: SourceReference) => {
@@ -719,6 +728,7 @@ export default function ProductionConfiguration({ params }: PageProps) {
                       const updatedSetup = removeSetupItem(
                         {
                           _id: source._id,
+                          type: source.type,
                           label: source.label,
                           input_slot: source.input_slot
                         },
@@ -748,15 +758,47 @@ export default function ProductionConfiguration({ params }: PageProps) {
                 )}
               </DndProvider>
             )}
-            <AddSource
-              disabled={
-                productionSetup?.production_settings === undefined ||
-                productionSetup?.production_settings === null
-              }
-              onClick={() => {
-                setInventoryVisible(true);
-              }}
-            />
+            <div className="bg-zinc-700 aspect-video m-2 p-2 text-p border-2 border-zinc-300 rounded flex flex-col gap-2 justify-center items-center">
+              <AddInput
+                onClickSource={() => setInventoryVisible(true)}
+                disabled={
+                  productionSetup?.production_settings === undefined ||
+                  productionSetup.production_settings === null
+                }
+              />
+              <div className="flex flex-row">
+                <Select
+                  disabled={
+                    productionSetup?.production_settings === undefined ||
+                    productionSetup.production_settings === null
+                  }
+                  options={[
+                    t('production.add_other_source_type'),
+                    'HTML',
+                    'Media Player'
+                  ]}
+                  value={selectedValue}
+                  onChange={(e) => {
+                    setSelectedValue(e.target.value);
+                  }}
+                />
+                <button
+                  className={`p-1.5 rounded ml-2 ${
+                    isAddButtonDisabled
+                      ? 'bg-zinc-500/50 text-white/50'
+                      : 'bg-zinc-500 text-white'
+                  }`}
+                  onClick={() =>
+                    addSourceToProduction(
+                      selectedValue === 'HTML' ? 'html' : 'mediaplayer'
+                    )
+                  }
+                  disabled={isAddButtonDisabled}
+                >
+                  {t('production.add')}
+                </button>
+              </div>
+            </div>
           </div>
           <div className="w-full flex gap-2 p-3">
             {productionSetup?.production_settings &&
