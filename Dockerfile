@@ -1,3 +1,4 @@
+ARG GUI_VERSION=dev
 FROM node:18-alpine AS base
 
 # Install dependencies only when needed
@@ -27,6 +28,7 @@ COPY . .
 # Uncomment the following line in case you want to disable telemetry during the build.
 ENV NEXT_TELEMETRY_DISABLED 1
 
+RUN echo ${GUI_VERSION} > /app/gui-version.txt
 RUN npm run build
 
 # Production image, copy all the files and run next
@@ -46,8 +48,7 @@ COPY --from=builder /app/public ./public
 # https://nextjs.org/docs/advanced-features/output-file-tracing
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-
-COPY gui-version.txt ./
+COPY --from=builder /app/gui-version.txt ./
 
 USER nextjs
 
