@@ -61,33 +61,15 @@ function FilterDropdown({
   };
 
   const showSelectedNdiType = () => {
-    if (!showNdiType) {
-      setOnlyShowNdiSources(true);
-      setOnlyShowBmdSources(false);
-      setOnlyShowSrtSources(false);
-    } else {
-      setOnlyShowNdiSources(false);
-    }
+    setOnlyShowNdiSources(!showNdiType);
   };
 
   const showSelectedSrtType = () => {
-    if (!showSrtType) {
-      setOnlyShowSrtSources(true);
-      setOnlyShowNdiSources(false);
-      setOnlyShowBmdSources(false);
-    } else {
-      setOnlyShowSrtSources(false);
-    }
+    setOnlyShowSrtSources(!showSrtType);
   };
 
   const showSelectedBmdType = () => {
-    if (!showBmdType) {
-      setOnlyShowBmdSources(true);
-      setOnlyShowNdiSources(false);
-      setOnlyShowSrtSources(false);
-    } else {
-      setOnlyShowBmdSources(false);
-    }
+    setOnlyShowBmdSources(!showBmdType);
   };
 
   const deleteTag = (value: string) => {
@@ -295,7 +277,7 @@ function FilterDropdown({
             </div>
             <div className="flex flex-row">
               <input
-                id="showSelectedCheckbox"
+                id="showSrtCheckbox"
                 type="checkbox"
                 className="flex ml-2 w-4 justify-center rounded-lg text-zinc-300"
                 checked={showSrtType}
@@ -303,14 +285,14 @@ function FilterDropdown({
               />
               <label
                 className="ml-2 mt-1 text-left text-zinc-300"
-                htmlFor="showSelectedCheckbox"
+                htmlFor="showSrtCheckbox"
               >
                 SRT
               </label>
             </div>
             <div className="flex flex-row">
               <input
-                id="showSelectedCheckbox"
+                id="showBmdCheckbox"
                 type="checkbox"
                 className="flex ml-2 w-4 justify-center rounded-lg text-zinc-300"
                 checked={showBmdType}
@@ -318,9 +300,9 @@ function FilterDropdown({
               />
               <label
                 className="ml-2 mt-1 text-left text-zinc-300"
-                htmlFor="showSelectedCheckbox"
+                htmlFor="showBmdCheckbox"
               >
-                SDI/HTML
+                SDI/HDMI
               </label>
             </div>
           </div>
