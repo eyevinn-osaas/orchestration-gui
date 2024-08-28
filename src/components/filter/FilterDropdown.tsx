@@ -1,6 +1,7 @@
 import React, { ChangeEvent, useEffect, useState } from 'react';
 import { useTranslate } from '../../i18n/useTranslate';
 import { SortSelect } from './SortSelect';
+import { IconArrowsSort } from '@tabler/icons-react';
 
 function FilterDropdown({
   close,
@@ -20,7 +21,8 @@ function FilterDropdown({
   setOnlyShowActiveSources: setOnlyShowConfigSources,
   setOnlyShowNdiSources: setOnlyShowNdiSources,
   setOnlyShowBmdSources: setOnlyShowBmdSources,
-  setOnlyShowSrtSources: setOnlyShowSrtSources
+  setOnlyShowSrtSources: setOnlyShowSrtSources,
+  handleSorting
 }: {
   close: () => void;
   types: string[];
@@ -40,19 +42,30 @@ function FilterDropdown({
   setOnlyShowNdiSources: React.Dispatch<React.SetStateAction<boolean>>;
   setOnlyShowBmdSources: React.Dispatch<React.SetStateAction<boolean>>;
   setOnlyShowSrtSources: React.Dispatch<React.SetStateAction<boolean>>;
+  handleSorting: (reversedOrder: boolean) => void;
 }) {
+  const t = useTranslate();
+
   const [searchedTypes, setSearchedTypes] = useState<string[]>([]);
   const [searchedLocations, setSearchedLocations] = useState<string[]>([]);
-  const [selectedValue, setSelectedValue] = useState<string>();
-
-  useEffect(() => {
-    console.log('selected: ', selectedValue);
-  }, [selectedValue]);
+  const [selectedValue, setSelectedValue] = useState<string>(
+    t('inventory_list.no_sorting_applied')
+  );
+  const [reverseSortOrder, setReverseSortOrder] = useState<boolean>(false);
 
   useEffect(() => {
     setSearchedTypes(types);
     setSearchedLocations(locations);
   }, [types, locations]);
+
+  useEffect(() => {
+    if (
+      selectedValue === t('inventory_list.no_sorting_applied') &&
+      reverseSortOrder
+    ) {
+      setReverseSortOrder(false);
+    }
+  }, [selectedValue, reverseSortOrder]);
 
   const hideLocationDiv = () => {
     setIsLocationHidden(true);
@@ -84,9 +97,13 @@ function FilterDropdown({
     setSelectedTags(new Set<string>(temp));
   };
 
-  // const handleChangeSorting = (event: React.ChangeEvent<HTMLSelectElement>) => {
-  //   setSelectedValue(event.target.value);
-  // };
+  useEffect(() => {
+    if (
+      reverseSortOrder ||
+      selectedValue === t('inventory_list.most_recent_connection')
+    )
+      handleSorting(reverseSortOrder);
+  }, [reverseSortOrder, selectedValue]);
 
   function addFilterComponent(type: string, component: string, index: number) {
     const id = `${type}-${component}-id`;
@@ -159,7 +176,6 @@ function FilterDropdown({
     setSearchedLocations(temp);
   };
 
-  const t = useTranslate();
   return (
     <div
       id="dropdownDefaultCheckbox"
@@ -252,17 +268,33 @@ function FilterDropdown({
               })}
             </ul>
           </div>
-          <div className="flex items-center">
+          <div className="flex items-center mt-2 text-p">
             <span className="flex min-w-[20%] mr-5">
               {t('inventory_list.sort_by')}
             </span>
             <SortSelect
-              value={selectedValue || t('inventory_list.no_sorting_applied')}
-              onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-                setSelectedValue(e.target.value)
-              }
-              options={['Newest', 'Oldest']}
+              value={selectedValue}
+              onChange={(e) => {
+                setSelectedValue(e.target.value);
+              }}
+              options={[
+                t('inventory_list.no_sorting_applied'),
+                t('inventory_list.most_recent_connection')
+              ]}
             />
+            <button
+              className={`ml-2 p-1 rounded-md ${
+                selectedValue === t('inventory_list.no_sorting_applied')
+                  ? 'text-white/50'
+                  : 'text-white'
+              } ${reverseSortOrder ? 'bg-zinc-800' : 'bg-zinc-600'}`}
+              onClick={() => setReverseSortOrder(!reverseSortOrder)}
+              disabled={
+                selectedValue === t('inventory_list.no_sorting_applied')
+              }
+            >
+              <IconArrowsSort />
+            </button>
           </div>
         </li>
         <li className="relative rounded w-full px-3">
