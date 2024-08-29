@@ -46,7 +46,7 @@ jobs:
         env:
           TAGS: ${{ steps.meta.outputs.tags }}
         run: echo "::set-output name=version::${TAGS##*:}"
-        
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v3
         with:
