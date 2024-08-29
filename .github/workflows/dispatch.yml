@@ -41,12 +41,18 @@ jobs:
             latest=false
           tags: type=sha
 
+      - name: Extract GUI version
+        id: gui
+        env:
+          TAGS: ${{ steps.meta.outputs.tags }}
+        run: echo "::set-output name=version::${TAGS##*:}"
+        
       - name: Build and push Docker image
         uses: docker/build-push-action@v3
         with:
           context: .
           push: true
           build-args: |
-            GUI_VERSION=${{ steps.meta.outputs.tags }}
+            GUI_VERSION=${{ steps.gui.outputs.version }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
