@@ -2,7 +2,7 @@
 
 ## Terminology
 
-- System referes to the agile live backend
+- System referes to the ateliere live backend
 - Manager refers to this application.
 
 ## Assumptions
