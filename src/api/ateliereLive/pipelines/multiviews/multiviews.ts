@@ -8,8 +8,8 @@ import { createMultiview } from '../../utils/multiview';
 import { getSourcesByIds } from '../../../manager/sources';
 import { Log } from '../../../logger';
 import { ProductionSettings } from '../../../../interfaces/production';
-import { AGILE_BASE_API_PATH } from '../../../../constants';
 import { MultiviewSettings } from '../../../../interfaces/multiview';
+import { LIVE_BASE_API_PATH } from '../../../../constants';
 
 export async function getMultiviewsForPipeline(
   pipelineUUID: string
@@ -130,8 +130,8 @@ export async function createMultiviewForPipeline(
       }
       const response = await fetch(
         new URL(
-          AGILE_BASE_API_PATH + `/pipelines/${pipelineUUID}/multiviews`,
-          process.env.AGILE_URL
+          LIVE_BASE_API_PATH + `/pipelines/${pipelineUUID}/multiviews`,
+          process.env.LIVE_URL
         ),
         {
           method: 'POST',
