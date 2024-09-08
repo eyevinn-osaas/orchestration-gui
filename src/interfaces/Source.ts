@@ -1,6 +1,6 @@
 import { ObjectId, WithId } from 'mongodb';
 export type SourceType = 'camera' | 'graphics' | 'microphone';
-export type SourceStatus = 'ready' | 'new' | 'gone';
+export type SourceStatus = 'ready' | 'new' | 'gone' | 'purge';
 export type VideoStream = {
   height?: number;
   width?: number;
@@ -26,8 +26,10 @@ export interface Source {
   };
   ingest_name: string;
   ingest_source_name: string;
+  ingest_type: string;
   video_stream: VideoStream;
   audio_stream: AudioStream;
+  lastConnected: Date;
 }
 
 export interface SourceReference {

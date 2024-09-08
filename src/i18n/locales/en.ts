@@ -45,7 +45,8 @@ export const en = {
     audio: 'Audio: {{audio}}',
     orig: 'Original Name: {{name}}',
     metadata: 'Source Metadata',
-    location_unknown: 'Unknown'
+    location_unknown: 'Unknown',
+    last_connected: 'Last connection'
   },
   delete_source_status: {
     delete_stream: 'Delete stream',
@@ -510,7 +511,10 @@ export const en = {
     locations: 'Location',
     active_sources: 'Active Sources',
     add: 'Add',
-    edit: 'Edit'
+    edit: 'Edit',
+    sort_by: 'Sort by',
+    no_sorting_applied: 'No sorting selected',
+    most_recent_connection: 'Most recent connection'
   },
   clear: 'Clear',
   apply: 'Apply',
@@ -603,7 +607,8 @@ export const en = {
     multiview_output_settings: 'Multiview output',
     select_multiview_preset: 'Preset',
     no_multiview_selected: 'No multiview selected',
-    no_multiview_found: 'No multiview found'
+    no_multiview_found: 'No multiview found',
+    no_port_selected: 'Unique port needed'
   },
   error: {
     missing_sources_in_db: 'Missing sources, please restart production.',

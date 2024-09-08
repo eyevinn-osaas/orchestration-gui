@@ -1,5 +1,7 @@
 import React, { ChangeEvent, useEffect, useState } from 'react';
 import { useTranslate } from '../../i18n/useTranslate';
+import { SortSelect } from './SortSelect';
+import { IconArrowsSort } from '@tabler/icons-react';
 
 function FilterDropdown({
   close,
@@ -10,10 +12,19 @@ function FilterDropdown({
   isLocationHidden,
   showConfigSources,
   selectedTags,
+  showNdiType,
+  showBmdType,
+  showSrtType,
+  showMediaSourceGeneratorType,
   setIsTypeHidden,
   setIsLocationHidden,
   setSelectedTags,
-  setOnlyShowActiveSources: setOnlyShowConfigSources
+  setOnlyShowActiveSources: setOnlyShowConfigSources,
+  setOnlyShowNdiSources: setOnlyShowNdiSources,
+  setOnlyShowBmdSources: setOnlyShowBmdSources,
+  setOnlyShowSrtSources: setOnlyShowSrtSources,
+  setOnlyShowMediaSourceGeneratorSources,
+  handleSorting
 }: {
   close: () => void;
   types: string[];
@@ -23,18 +34,44 @@ function FilterDropdown({
   isLocationHidden: boolean;
   showConfigSources: boolean;
   selectedTags: Set<string>;
+  showNdiType: boolean;
+  showSrtType: boolean;
+  showBmdType: boolean;
+  showMediaSourceGeneratorType: boolean;
   setIsTypeHidden: React.Dispatch<React.SetStateAction<boolean>>;
   setIsLocationHidden: React.Dispatch<React.SetStateAction<boolean>>;
   setOnlyShowActiveSources: React.Dispatch<React.SetStateAction<boolean>>;
   setSelectedTags: React.Dispatch<React.SetStateAction<Set<string>>>;
+  setOnlyShowNdiSources: React.Dispatch<React.SetStateAction<boolean>>;
+  setOnlyShowBmdSources: React.Dispatch<React.SetStateAction<boolean>>;
+  setOnlyShowSrtSources: React.Dispatch<React.SetStateAction<boolean>>;
+  setOnlyShowMediaSourceGeneratorSources: React.Dispatch<
+    React.SetStateAction<boolean>
+  >;
+  handleSorting: (reversedOrder: boolean) => void;
 }) {
+  const t = useTranslate();
+
   const [searchedTypes, setSearchedTypes] = useState<string[]>([]);
   const [searchedLocations, setSearchedLocations] = useState<string[]>([]);
+  const [selectedValue, setSelectedValue] = useState<string>(
+    t('inventory_list.no_sorting_applied')
+  );
+  const [reverseSortOrder, setReverseSortOrder] = useState<boolean>(false);
 
   useEffect(() => {
     setSearchedTypes(types);
     setSearchedLocations(locations);
   }, [types, locations]);
+
+  useEffect(() => {
+    if (
+      selectedValue === t('inventory_list.no_sorting_applied') &&
+      reverseSortOrder
+    ) {
+      setReverseSortOrder(false);
+    }
+  }, [selectedValue, reverseSortOrder]);
 
   const hideLocationDiv = () => {
     setIsLocationHidden(true);
@@ -44,8 +81,24 @@ function FilterDropdown({
     setIsTypeHidden(true);
   };
 
-  const showSelectedConfigSources = () => {
+  const toggleConfigSources = () => {
     setOnlyShowConfigSources(!showConfigSources);
+  };
+
+  const toggleNdiType = () => {
+    setOnlyShowNdiSources(!showNdiType);
+  };
+
+  const toggleSrtType = () => {
+    setOnlyShowSrtSources(!showSrtType);
+  };
+
+  const toggleBmdType = () => {
+    setOnlyShowBmdSources(!showBmdType);
+  };
+
+  const toggleMediaSourceGeneratorType = () => {
+    setOnlyShowMediaSourceGeneratorSources(!showMediaSourceGeneratorType);
   };
 
   const deleteTag = (value: string) => {
@@ -53,6 +106,14 @@ function FilterDropdown({
     temp.delete(value);
     setSelectedTags(new Set<string>(temp));
   };
+
+  useEffect(() => {
+    if (
+      reverseSortOrder ||
+      selectedValue === t('inventory_list.most_recent_connection')
+    )
+      handleSorting(reverseSortOrder);
+  }, [reverseSortOrder, selectedValue]);
 
   function addFilterComponent(type: string, component: string, index: number) {
     const id = `${type}-${component}-id`;
@@ -97,7 +158,11 @@ function FilterDropdown({
 
   const handleClear = () => {
     setSelectedTags(new Set<string>());
-    setOnlyShowConfigSources(false);
+    setOnlyShowConfigSources(true);
+    setOnlyShowBmdSources(true);
+    setOnlyShowNdiSources(true);
+    setOnlyShowSrtSources(true);
+    setOnlyShowMediaSourceGeneratorSources(false);
   };
 
   const typesSearch = (event: ChangeEvent<HTMLInputElement>) => {
@@ -122,7 +187,6 @@ function FilterDropdown({
     setSearchedLocations(temp);
   };
 
-  const t = useTranslate();
   return (
     <div
       id="dropdownDefaultCheckbox"
@@ -206,7 +270,7 @@ function FilterDropdown({
               })}
           </div>
           <div
-            className="absolute border w-full z-20 rounded-lg shadow  divide-y bg-zinc-700 divide-gray-600"
+            className="absolute border w-full z-50 rounded-lg shadow  divide-y bg-zinc-700 divide-gray-600"
             hidden={isLocationHidden}
           >
             <ul className="px-3 pb-3 text-sm text-p">
@@ -215,6 +279,34 @@ function FilterDropdown({
               })}
             </ul>
           </div>
+          <div className="flex items-center mt-2 text-p">
+            <span className="flex min-w-[20%] mr-5">
+              {t('inventory_list.sort_by')}
+            </span>
+            <SortSelect
+              value={selectedValue}
+              onChange={(e) => {
+                setSelectedValue(e.target.value);
+              }}
+              options={[
+                t('inventory_list.no_sorting_applied'),
+                t('inventory_list.most_recent_connection')
+              ]}
+            />
+            <button
+              className={`ml-2 p-1 rounded-md ${
+                selectedValue === t('inventory_list.no_sorting_applied')
+                  ? 'text-white/50'
+                  : 'text-white'
+              } ${reverseSortOrder ? 'bg-zinc-800' : 'bg-zinc-600'}`}
+              onClick={() => setReverseSortOrder(!reverseSortOrder)}
+              disabled={
+                selectedValue === t('inventory_list.no_sorting_applied')
+              }
+            >
+              <IconArrowsSort />
+            </button>
+          </div>
         </li>
         <li className="relative rounded w-full px-3">
           <div className="flex flex-row justify-between mt-4">
@@ -222,28 +314,90 @@ function FilterDropdown({
               <input
                 id="showSelectedCheckbox"
                 type="checkbox"
-                className="flex ml-2 mb-2 w-4 justify-center rounded-lg text-zinc-300"
+                className="flex ml-2 w-4 justify-center rounded-lg text-zinc-300"
                 checked={showConfigSources}
-                onChange={showSelectedConfigSources}
+                onChange={toggleConfigSources}
               />
               <label
-                className="ml-2 mt-2 text-left text-zinc-300"
+                className="ml-2 mt-1 text-left text-zinc-300"
                 htmlFor="showSelectedCheckbox"
               >
                 {t('inventory_list.active_sources')}
               </label>
             </div>
+            <div className="flex flex-row">
+              <input
+                id="showNdiCheckbox"
+                type="checkbox"
+                className="flex ml-2 w-4 justify-center rounded-lg text-zinc-300"
+                checked={showNdiType}
+                onChange={toggleNdiType}
+              />
+              <label
+                className="ml-2 mt-1 text-left text-zinc-300"
+                htmlFor="showNdiCheckbox"
+              >
+                NDI
+              </label>
+            </div>
+            <div className="flex flex-row">
+              <input
+                id="showSrtCheckbox"
+                type="checkbox"
+                className="flex ml-2 w-4 justify-center rounded-lg text-zinc-300"
+                checked={showSrtType}
+                onChange={toggleSrtType}
+              />
+              <label
+                className="ml-2 mt-1 text-left text-zinc-300"
+                htmlFor="showSrtCheckbox"
+              >
+                SRT
+              </label>
+            </div>
+            <div className="flex flex-row">
+              <input
+                id="showBmdCheckbox"
+                type="checkbox"
+                className="flex ml-2 w-4 justify-center rounded-lg text-zinc-300"
+                checked={showBmdType}
+                onChange={toggleBmdType}
+              />
+              <label
+                className="ml-2 mt-1 text-left text-zinc-300"
+                htmlFor="showBmdCheckbox"
+              >
+                SDI/HDMI
+              </label>
+            </div>
+            <div className="flex flex-row">
+              <input
+                id="showMediaSourceCheckbox"
+                type="checkbox"
+                className="flex ml-2 w-4 justify-center rounded-lg text-zinc-300"
+                checked={showMediaSourceGeneratorType}
+                onChange={toggleMediaSourceGeneratorType}
+              />
+              <label
+                className="ml-2 mt-1 text-left text-zinc-300"
+                htmlFor="showMediaSourceCheckbox"
+              >
+                Test pattern
+              </label>
+            </div>
+          </div>
+          <div className="flex self-end justify-end mt-4">
             <button
               onClick={handleClear}
               id="dropdownCheckboxButton"
-              className="flex ml-2 mb-2 min-w-[30%] justify-center font-medium rounded-lg py-2.5 text-zinc-300 bg-zinc-800  hover:ring-2 focus:outline-none bg-zink-800 hover:bg-zinc-700 opacity-70"
+              className="flex ml-2 mb-2 min-w-[30%] justify-center font-medium rounded-lg py-2.5 text-zinc-300 hover:ring-2 focus:outline-none bg-zinc-800 hover:bg-zinc-700 opacity-70"
               type="button"
             >
               {t('clear')}
             </button>
             <button
               onClick={() => close()}
-              className="flex ml-2 mb-2 min-w-[30%] justify-center font-medium rounded-lg py-2.5 text-zinc-300 bg-zinc-800  hover:ring-2 focus:outline-none bg-zink-800 hover:bg-zinc-700"
+              className="flex ml-2 mb-2 min-w-[30%] justify-center font-medium rounded-lg py-2.5 text-zinc-300 hover:ring-2 focus:outline-none bg-zinc-800 hover:bg-zinc-700"
               type="button"
             >
               {t('apply')}

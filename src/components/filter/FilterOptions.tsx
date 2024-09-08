@@ -6,13 +6,19 @@ import { ClickAwayListener } from '@mui/base';
 import { SourceWithId } from '../../interfaces/Source';
 import { FilterContext } from '../inventory/FilterContext';
 
-function FilterOptions({
-  onFilteredSources
-}: {
+type FilterOptionsProps = {
   onFilteredSources: (sources: Map<string, SourceWithId>) => void;
-}) {
+};
+
+function FilterOptions({ onFilteredSources }: FilterOptionsProps) {
   const { locations, types, sources } = useContext(FilterContext);
+
   const [onlyShowActiveSources, setOnlyShowActiveSources] = useState(false);
+  const [showNdiType, setShowNdiType] = useState(true);
+  const [showBmdType, setShowBmdType] = useState(true);
+  const [showSrtType, setShowSrtType] = useState(true);
+  const [showMediaSourceGeneratorType, setShowMediaGeneratorSourceType] =
+    useState(false);
   const [isFilterHidden, setIsFilterHidden] = useState(true);
   const [isTypeHidden, setIsTypeHidden] = useState(true);
   const [isLocationHidden, setIsLocationHidden] = useState(true);
@@ -20,37 +26,35 @@ function FilterOptions({
   const [selectedTags, setSelectedTags] = useState<Set<string>>(
     new Set<string>()
   );
-
-  let tempSet = new Map<string, SourceWithId>(sources);
+  const [filteredSources, setFilteredSources] = useState<
+    Map<string, SourceWithId>
+  >(new Map<string, SourceWithId>());
 
   useEffect(() => {
-    if (
-      selectedTags.size === 0 &&
-      searchString.length === 0 &&
-      !onlyShowActiveSources
-    ) {
-      resetFilter();
-      return;
+    const tempSet = new Map<string, SourceWithId>(sources);
+
+    if (searchString.length > 0 || selectedTags.size > 0) {
+      handleSearch(tempSet);
+      handleTags(tempSet);
     }
 
-    handleSearch();
-    handleTags();
-    handleShowActiveSources();
+    filterSources(tempSet);
 
+    setFilteredSources(tempSet);
     onFilteredSources(tempSet);
-    tempSet.clear();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchString, selectedTags, onlyShowActiveSources]);
+  }, [
+    searchString,
+    selectedTags,
+    onlyShowActiveSources,
+    showNdiType,
+    showBmdType,
+    showSrtType,
+    showMediaSourceGeneratorType,
+    sources
+  ]);
 
-  const resetFilter = () => {
-    tempSet = new Map<string, SourceWithId>(sources);
-    onFilteredSources(sources);
-  };
-
-  const handleSearch = () => {
-    if (searchString.length === 0) {
-      tempSet = new Map<string, SourceWithId>(sources);
-    } else {
+  const handleSearch = (tempSet: Map<string, SourceWithId>) => {
+    if (searchString.length > 0) {
       for (const source of tempSet.values()) {
         const searchValues = [
           source.name,
@@ -69,8 +73,8 @@ function FilterOptions({
     }
   };
 
-  const handleTags = () => {
-    if (selectedTags.size !== 0) {
+  const handleTags = (tempSet: Map<string, SourceWithId>) => {
+    if (selectedTags.size > 0) {
       const typeTags = new Set<string>();
       const locationTags = new Set<string>();
       selectedTags.forEach((tag) => {
@@ -90,14 +94,50 @@ function FilterOptions({
     }
   };
 
-  const handleShowActiveSources = () => {
-    if (onlyShowActiveSources) {
-      for (const source of tempSet.values()) {
-        if (source.status === 'gone') {
-          tempSet.delete(source._id.toString());
-        }
+  const filterSources = (tempSet: Map<string, SourceWithId>) => {
+    const isFilteringByType =
+      showNdiType || showBmdType || showSrtType || showMediaSourceGeneratorType;
+
+    if (!isFilteringByType) {
+      tempSet.clear();
+      return;
+    }
+
+    for (const source of tempSet.values()) {
+      const ingestType = source.ingest_type?.toUpperCase() || '';
+      let shouldDelete = true;
+
+      if (
+        (showNdiType && ingestType === 'NDI') ||
+        (showBmdType && ingestType === 'BMD') ||
+        (showSrtType && ingestType === 'SRT') ||
+        (showMediaSourceGeneratorType && ingestType === 'MEDIASOURCEGENERATOR')
+      ) {
+        shouldDelete = false;
+      }
+
+      if (onlyShowActiveSources && source.status === 'gone') {
+        shouldDelete = true;
+      }
+
+      if (shouldDelete) {
+        tempSet.delete(source._id.toString());
       }
     }
+  };
+
+  const handleSorting = (reversedOrder: boolean) => {
+    const sortedSourcesArray = Array.from(filteredSources.values()).sort(
+      (a, b) => {
+        const dateA = new Date(a.lastConnected).getTime();
+        const dateB = new Date(b.lastConnected).getTime();
+        return reversedOrder ? dateA - dateB : dateB - dateA;
+      }
+    );
+    const sortedMap = new Map(
+      sortedSourcesArray.map((source) => [source._id.toString(), source])
+    );
+    onFilteredSources(sortedMap);
   };
 
   return (
@@ -127,6 +167,17 @@ function FilterOptions({
           setIsLocationHidden={setIsLocationHidden}
           setSelectedTags={setSelectedTags}
           setOnlyShowActiveSources={setOnlyShowActiveSources}
+          setOnlyShowNdiSources={setShowNdiType}
+          setOnlyShowBmdSources={setShowBmdType}
+          setOnlyShowSrtSources={setShowSrtType}
+          setOnlyShowMediaSourceGeneratorSources={
+            setShowMediaGeneratorSourceType
+          }
+          showBmdType={showBmdType}
+          showNdiType={showNdiType}
+          showSrtType={showSrtType}
+          showMediaSourceGeneratorType={showMediaSourceGeneratorType}
+          handleSorting={handleSorting}
         />
       </div>
     </ClickAwayListener>
