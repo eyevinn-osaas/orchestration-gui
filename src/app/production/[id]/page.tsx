@@ -43,9 +43,7 @@ import { useDeleteStream, useCreateStream } from '../../../hooks/streams';
 import { MonitoringButton } from '../../../components/button/MonitoringButton';
 import { useGetMultiviewPreset } from '../../../hooks/multiviewPreset';
 import { useMultiviews } from '../../../hooks/multiviews';
-import { useAddSource } from '../../../hooks/sources/useAddSource';
-import { useGetFirstEmptySlot } from '../../../hooks/useGetFirstEmptySlot';
-import { Select } from '../../../components/select/Select';
+import { LockButton } from '../../../components/lockButton/LockButton';
 
 export default function ProductionConfiguration({ params }: PageProps) {
   const t = useTranslate();
@@ -95,12 +93,7 @@ export default function ProductionConfiguration({ params }: PageProps) {
   const [deleteSourceStatus, setDeleteSourceStatus] =
     useState<DeleteSourceStatus>();
 
-  // Create source
-  const [firstEmptySlot] = useGetFirstEmptySlot();
-  const [addSource] = useAddSource();
-
-  const isAddButtonDisabled =
-    selectedValue !== 'HTML' && selectedValue !== 'Media Player';
+  const [isLocked, setIsLocked] = useState<boolean>(true);
 
   useEffect(() => {
     refreshPipelines();
@@ -411,6 +404,7 @@ export default function ProductionConfiguration({ params }: PageProps) {
           key={`${source.ingest_source_name}-${index}`}
           source={source}
           disabled={selectedProductionItems?.includes(source._id.toString())}
+          isLocked={isLocked}
           action={(source: SourceWithId) => {
             if (productionSetup && productionSetup.isActive) {
               setSelectedSource(source);
@@ -629,14 +623,21 @@ export default function ProductionConfiguration({ params }: PageProps) {
             }
           }}
           onBlur={() => updateConfigName(configurationName)}
+          disabled={isLocked}
         />
         <div
           className="flex mr-2 w-fit rounded justify-end items-center gap-3"
           key={'StartProductionButtonKey'}
           id="presetDropdownDefaultCheckbox"
         >
+          <LockButton
+            isLocked={isLocked}
+            onClick={() => setIsLocked(!isLocked)}
+          />
           <PresetDropdown
-            disabled={productionSetup ? productionSetup.isActive : false}
+            disabled={
+              (productionSetup ? productionSetup.isActive : false) || isLocked
+            }
             isHidden={isPresetDropdownHidden}
             setHidden={setIsPresetDropdownHidden}
             selectedPreset={selectedPreset}
@@ -650,15 +651,14 @@ export default function ProductionConfiguration({ params }: PageProps) {
               })}
           </PresetDropdown>
           <ConfigureOutputButton
-            disabled={productionSetup?.isActive}
+            disabled={productionSetup?.isActive || isLocked}
             preset={selectedPreset}
             updatePreset={updatePreset}
           />
           <StartProductionButton
             refreshProduction={refreshProduction}
             production={productionSetup}
-            sources={sources}
-            disabled={!selectedPreset ? true : false}
+            disabled={(!selectedPreset ? true : false) || isLocked}
           />
         </div>
       </HeaderNavigation>
@@ -745,6 +745,7 @@ export default function ProductionConfiguration({ params }: PageProps) {
                       });
                     }
                   }}
+                  isLocked={isLocked}
                 />
                 {removeSourceModal && selectedSourceRef && (
                   <RemoveSourceModal
@@ -758,47 +759,16 @@ export default function ProductionConfiguration({ params }: PageProps) {
                 )}
               </DndProvider>
             )}
-            <div className="bg-zinc-700 aspect-video m-2 p-2 text-p border-2 border-zinc-300 rounded flex flex-col gap-2 justify-center items-center">
-              <AddInput
-                onClickSource={() => setInventoryVisible(true)}
-                disabled={
-                  productionSetup?.production_settings === undefined ||
-                  productionSetup.production_settings === null
-                }
-              />
-              <div className="flex flex-row">
-                <Select
-                  disabled={
-                    productionSetup?.production_settings === undefined ||
-                    productionSetup.production_settings === null
-                  }
-                  options={[
-                    t('production.add_other_source_type'),
-                    'HTML',
-                    'Media Player'
-                  ]}
-                  value={selectedValue}
-                  onChange={(e) => {
-                    setSelectedValue(e.target.value);
-                  }}
-                />
-                <button
-                  className={`p-1.5 rounded ml-2 ${
-                    isAddButtonDisabled
-                      ? 'bg-zinc-500/50 text-white/50'
-                      : 'bg-zinc-500 text-white'
-                  }`}
-                  onClick={() =>
-                    addSourceToProduction(
-                      selectedValue === 'HTML' ? 'html' : 'mediaplayer'
-                    )
-                  }
-                  disabled={isAddButtonDisabled}
-                >
-                  {t('production.add')}
-                </button>
-              </div>
-            </div>
+            <AddSource
+              disabled={
+                productionSetup?.production_settings === undefined ||
+                productionSetup?.production_settings === null ||
+                isLocked
+              }
+              onClick={() => {
+                setInventoryVisible(true);
+              }}
+            />
           </div>
           <div className="w-full flex gap-2 p-3">
             {productionSetup?.production_settings &&
@@ -806,7 +776,7 @@ export default function ProductionConfiguration({ params }: PageProps) {
                 (pipeline, i) => {
                   return (
                     <PipelineNameDropDown
-                      disabled={productionSetup.isActive}
+                      disabled={productionSetup.isActive || isLocked}
                       key={pipeline.pipeline_readable_name}
                       label={pipeline.pipeline_readable_name}
                       options={pipelines?.map((pipeline) => ({
@@ -822,7 +792,7 @@ export default function ProductionConfiguration({ params }: PageProps) {
               )}
             {productionSetup?.production_settings && (
               <ControlPanelDropDown
-                disabled={productionSetup.isActive}
+                disabled={productionSetup.isActive || isLocked}
                 options={controlPanels?.map((controlPanel) => ({
                   option: controlPanel.name,
                   available: controlPanel.outgoing_connections?.length === 0
@@ -841,7 +811,10 @@ export default function ProductionConfiguration({ params }: PageProps) {
           </div>
           {productionSetup && productionSetup.isActive && (
             <div className="flex justify-end p-3">
-              <MonitoringButton id={productionSetup?._id.toString()} />
+              <MonitoringButton
+                id={productionSetup?._id.toString()}
+                isLocked={isLocked}
+              />
             </div>
           )}
         </div>

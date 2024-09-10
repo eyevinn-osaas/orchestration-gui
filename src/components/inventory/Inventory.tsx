@@ -10,7 +10,11 @@ import EditView from './editView/EditView';
 import FilterContext from './FilterContext';
 import styles from './Inventory.module.scss';
 
-export default function Inventory() {
+type InventoryProps = {
+  isLocked: boolean;
+};
+
+export default function Inventory({ isLocked }: InventoryProps) {
   const [removeInventorySource, reloadList] = useSetSourceToPurge();
   const [updatedSource, setUpdatedSource] = useState<
     SourceWithId | undefined
@@ -52,6 +56,7 @@ export default function Inventory() {
             action={(source) => {
               editSource(source);
             }}
+            isLocked={isLocked}
           />
         );
       }
@@ -93,6 +98,7 @@ export default function Inventory() {
           >
             <EditView
               source={currentSource}
+              isLocked={isLocked}
               updateSource={(source) => setUpdatedSource(source)}
               close={() => setCurrentSource(null)}
               removeInventorySource={(source) => removeInventorySource(source)}

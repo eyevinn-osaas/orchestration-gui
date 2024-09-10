@@ -10,12 +10,14 @@ export default function SourceCards({
   productionSetup,
   updateProduction,
   onSourceUpdate,
-  onSourceRemoval
+  onSourceRemoval,
+  isLocked
 }: {
   productionSetup: Production;
   updateProduction: (updated: Production) => void;
   onSourceUpdate: (source: SourceReference) => void;
   onSourceRemoval: (source: SourceReference) => void;
+  isLocked: boolean;
 }) {
   const [items, moveItem] = useDragableItems(productionSetup.sources);
   const [selectingText, setSelectingText] = useState(false);
@@ -54,59 +56,34 @@ export default function SourceCards({
               updateProduction={updateProduction}
               selectingText={selectingText}
             >
-              {isSource ? (
-                <SourceCard
-                  source={source}
-                  label={source.label}
-                  src={source.src}
-                  onSourceUpdate={onSourceUpdate}
-                  onSourceRemoval={onSourceRemoval}
-                  onSelectingText={(isSelecting) =>
-                    setSelectingText(isSelecting)
-                  }
-                  type={'ingest_source'}
-                />
-              ) : (
-                <SourceCard
-                  sourceRef={source}
-                  label={source.label}
-                  onSourceUpdate={onSourceUpdate}
-                  onSourceRemoval={onSourceRemoval}
-                  onSelectingText={(isSelecting) =>
-                    setSelectingText(isSelecting)
-                  }
-                  type={source.type}
-                />
-              )}
+              <SourceCard
+                source={source}
+                label={source.label}
+                src={source.src}
+                onSourceUpdate={onSourceUpdate}
+                onSourceRemoval={onSourceRemoval}
+                onSelectingText={(isSelecting: boolean) =>
+                  setSelectingText(isSelecting)
+                }
+                isLocked={isLocked}
+              />
             </DragItem>
           );
         } else {
-          isSource
-            ? gridItems.push(
-                <SourceCard
-                  source={source}
-                  label={source.label}
-                  src={source.src}
-                  onSourceUpdate={onSourceUpdate}
-                  onSourceRemoval={onSourceRemoval}
-                  onSelectingText={(isSelecting) =>
-                    setSelectingText(isSelecting)
-                  }
-                  type={'ingest_source'}
-                />
-              )
-            : gridItems.push(
-                <SourceCard
-                  sourceRef={source}
-                  label={source.label}
-                  onSourceUpdate={onSourceUpdate}
-                  onSourceRemoval={onSourceRemoval}
-                  onSelectingText={(isSelecting) =>
-                    setSelectingText(isSelecting)
-                  }
-                  type={source.type}
-                />
-              );
+          gridItems.push(
+            <SourceCard
+              key={`${source.ingest_source_name}-${source.input_slot}-key`}
+              source={source}
+              label={source.label}
+              src={source.src}
+              onSourceUpdate={onSourceUpdate}
+              onSourceRemoval={onSourceRemoval}
+              onSelectingText={(isSelecting: boolean) =>
+                setSelectingText(isSelecting)
+              }
+              isLocked={isLocked}
+            />
+          );
         }
         return false;
       } else {

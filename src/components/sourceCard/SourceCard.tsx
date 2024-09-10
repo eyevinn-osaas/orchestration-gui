@@ -14,9 +14,8 @@ type SourceCardProps = {
   onSelectingText: (bool: boolean) => void;
   forwardedRef?: React.LegacyRef<HTMLDivElement>;
   style?: object;
-  src?: string;
-  sourceRef?: SourceReference;
-  type: Type;
+  src: string;
+  isLocked: boolean;
 };
 
 export default function SourceCard({
@@ -28,8 +27,7 @@ export default function SourceCard({
   forwardedRef,
   src,
   style,
-  sourceRef,
-  type
+  isLocked
 }: SourceCardProps) {
   const [sourceLabel, setSourceLabel] = useState(
     sourceRef?.label || source?.name
@@ -85,60 +83,33 @@ export default function SourceCard({
             onSelectingText(true);
           }}
           onBlur={saveText}
+          disabled={isLocked}
         />
       </div>
-      {source && source.src && (
-        <SourceThumbnail source={source} src={src} type={type} />
-      )}
-      {!source && sourceRef && <SourceThumbnail type={sourceRef.type} />}
-      {(sourceRef || source) && (
-        <h2
-          className={`${
-            source && 'absolute bottom-4'
-          } p-1 text-p text-xs bg-zinc-900 w-full bg-opacity-90 ${
-            sourceRef && !source && 'absolute bottom-0'
-          }`}
-        >
-          {t('source.input_slot', {
-            input_slot:
-              sourceRef?.input_slot?.toString() ||
-              source?.input_slot?.toString() ||
-              ''
-          })}
-        </h2>
-      )}
-      {source && (
-        <h2 className="absolute bottom-0 text-p text-xs bg-zinc-900 w-full bg-opacity-90">
-          {t('source.ingest', {
-            ingest: source.ingest_name
-          })}
-        </h2>
-      )}
-      {(source || sourceRef) && (
-        <button
-          className="absolute bottom-0 right-0 text-p hover:border-l hover:border-t bg-red-700 hover:bg-red-600 min-w-fit p-1 rounded-tl-lg"
-          onClick={() => {
-            if (source) {
-              onSourceRemoval({
-                _id: source._id.toString(),
-                type: 'ingest_source',
-                label: sourceLabel || source.name,
-                input_slot: source.input_slot,
-                stream_uuids: source.stream_uuids
-              });
-            } else if (sourceRef && !source) {
-              onSourceRemoval({
-                _id: sourceRef._id,
-                type: sourceRef.type,
-                label: sourceRef.label,
-                input_slot: sourceRef.input_slot
-              });
-            }
-          }}
-        >
-          <IconTrash className="text-p w-4 h-4" />
-        </button>
-      )}
+      <SourceThumbnail source={source} src={src} />
+      <h2 className="absolute bottom-0 text-p text-xs bg-zinc-900 w-full bg-opacity-90">
+        {t('source.ingest', {
+          ingest: source.ingest_name
+        })}
+      </h2>
+      <button
+        className={`${
+          isLocked
+            ? 'bg-red-500/50 text-p/50'
+            : 'text-p bg-red-700 hover:bg-red-600 hover:border-l hover:border-t'
+        } absolute bottom-0 right-0 text-p min-w-fit p-1 rounded-tl-lg`}
+        disabled={isLocked}
+        onClick={() => {
+          onSourceRemoval({
+            _id: source._id.toString(),
+            label: source.label,
+            input_slot: source.input_slot,
+            stream_uuids: source.stream_uuids
+          });
+        }}
+      >
+        <IconTrash className="text-p w-4 h-4" />
+      </button>
     </div>
   );
 }
