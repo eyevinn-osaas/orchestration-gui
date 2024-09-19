@@ -666,6 +666,7 @@ export default function ProductionConfiguration({ params }: PageProps) {
             disabled={productionSetup?.isActive || locked}
             preset={selectedPreset}
             updatePreset={updatePreset}
+            production={productionSetup}
           />
           <StartProductionButton
             refreshProduction={refreshProduction}
@@ -707,6 +708,7 @@ export default function ProductionConfiguration({ params }: PageProps) {
               <DndProvider backend={HTML5Backend}>
                 <SourceCards
                   productionSetup={productionSetup}
+                  locked={locked}
                   updateProduction={(updated) => {
                     updateProduction(productionSetup._id, updated);
                   }}
