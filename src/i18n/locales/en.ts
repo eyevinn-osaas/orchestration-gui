@@ -29,13 +29,15 @@ export const en = {
     sync: 'Synchronize database',
     start: 'Initialize',
     monitoring: 'Start runtime monitoring',
-    unexpected: 'Unexpected error'
+    unexpected: 'Unexpected error',
+    websocket: 'Websocket connection'
   },
   stop_production_status: {
     disconnect_connections: 'Disconnect connections',
     remove_pipeline_streams: 'Remove streams',
     remove_pipeline_multiviews: 'Remove multiviews',
-    unexpected: 'Enexpeted error'
+    unexpected: 'Unexpected error',
+    websocket: 'Stop websocket'
   },
   source: {
     type: 'Type: {{type}}',

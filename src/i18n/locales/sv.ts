@@ -31,13 +31,15 @@ export const sv = {
     sync: 'Synkronisera databasen',
     monitoring: 'Starta monitorering',
     start: 'Påbörja',
-    unexpected: 'Oväntat fel'
+    unexpected: 'Oväntat fel',
+    websocket: 'Websocket anslutning'
   },
   stop_production_status: {
     disconnect_connections: 'Frånkoppla anslutningar',
     remove_pipeline_streams: 'Ta bort strömmar',
     remove_pipeline_multiviews: 'Ta bort multiviews',
-    unexpected: 'Oväntat fel'
+    unexpected: 'Oväntat fel',
+    websocket: 'Stoppa websocket'
   },
   source: {
     type: 'Typ: {{type}}',
