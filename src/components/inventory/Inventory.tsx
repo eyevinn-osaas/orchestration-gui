@@ -7,13 +7,19 @@ import { SourceWithId } from '../../interfaces/Source';
 import EditView from './editView/EditView';
 import SourceList from '../sourceList/SourceList';
 import { useTranslate } from '../../i18n/useTranslate';
+import { useRemoveInventorySourceItem } from '../../hooks/sources/useRemoveInventorySource';
 
 export default function Inventory({ locked }: { locked: boolean }) {
-  const [removeInventorySource, reloadList] = useSetSourceToPurge();
+  const [purgeInventorySource, reloadList] = useSetSourceToPurge();
+  const [removeInventorySourceItem, reloadInventoryList] =
+    useRemoveInventorySourceItem();
   const [updatedSource, setUpdatedSource] = useState<
     SourceWithId | undefined
   >();
-  const [sources] = useSources(reloadList, updatedSource);
+  const [sources] = useSources(
+    reloadList || reloadInventoryList,
+    updatedSource
+  );
   const [currentSource, setCurrentSource] = useState<SourceWithId | null>();
   const t = useTranslate();
 
@@ -24,10 +30,10 @@ export default function Inventory({ locked }: { locked: boolean }) {
   }, [updatedSource]);
 
   useEffect(() => {
-    if (reloadList) {
+    if (reloadList || reloadInventoryList) {
       setCurrentSource(null);
     }
-  }, [reloadList]);
+  }, [reloadList, reloadInventoryList]);
 
   const editSource = (source: SourceWithId) => {
     setCurrentSource(source);
@@ -47,7 +53,8 @@ export default function Inventory({ locked }: { locked: boolean }) {
             source={currentSource}
             updateSource={(source) => setUpdatedSource(source)}
             close={() => setCurrentSource(null)}
-            removeInventorySource={removeInventorySource}
+            purgeInventorySource={purgeInventorySource}
+            removeInventorySourceItem={removeInventorySourceItem}
           />
         </div>
       ) : null}

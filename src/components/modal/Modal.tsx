@@ -7,11 +7,12 @@ type BaseModalProps = {
   open: boolean;
   forwardRef?: LegacyRef<HTMLDivElement> | null;
   outsideClick: () => void;
+  className?: string;
 };
 
 export type ModalProps = BaseModalProps & PropsWithChildren;
 
-export function Modal({ open, children, outsideClick }: ModalProps) {
+export function Modal({ open, children, outsideClick, className }: ModalProps) {
   const element = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -34,7 +35,7 @@ export function Modal({ open, children, outsideClick }: ModalProps) {
     >
       <div
         ref={element}
-        className="bg-container text-p p-4 shadow-xl rounded m-2"
+        className={`bg-container text-p p-4 shadow-xl rounded m-2 ${className}`}
       >
         {children}
       </div>

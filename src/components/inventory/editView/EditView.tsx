@@ -10,13 +10,15 @@ export default function EditView({
   source,
   updateSource,
   close,
-  removeInventorySource,
+  purgeInventorySource,
+  removeInventorySourceItem,
   locked
 }: {
   source: SourceWithId;
   updateSource: (source: SourceWithId) => void;
   close: () => void;
-  removeInventorySource: (source: SourceWithId) => void;
+  purgeInventorySource: (source: SourceWithId) => void;
+  removeInventorySourceItem: (id: string) => Promise<Response | undefined>;
   locked: boolean;
 }) {
   return (
@@ -34,7 +36,8 @@ export default function EditView({
       <UpdateButtons
         source={source}
         close={close}
-        removeInventorySource={removeInventorySource}
+        purgeInventorySource={purgeInventorySource}
+        removeInventorySourceItem={removeInventorySourceItem}
         locked={locked}
       />
     </EditViewContext>
