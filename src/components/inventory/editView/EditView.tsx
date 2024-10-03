@@ -5,6 +5,8 @@ import { SourceWithId } from '../../../interfaces/Source';
 import UpdateButtons from './UpdateButtons';
 import AudioChannels from './AudioChannels/AudioChannels';
 import ImageComponent from '../../image/ImageComponent';
+import { useContext } from 'react';
+import { GlobalContext } from '../../../contexts/GlobalContext';
 
 export default function EditView({
   source,

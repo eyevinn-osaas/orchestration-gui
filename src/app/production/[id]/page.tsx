@@ -1,6 +1,11 @@
 'use client';
-
-import React, { useEffect, useState, KeyboardEvent, useContext } from 'react';
+import React, {
+  useEffect,
+  useState,
+  KeyboardEvent,
+  useContext,
+  useMemo
+} from 'react';
 import { PageProps } from '../../../../.next/types/app/production/[id]/page';
 import { AddInput } from '../../../components/addInput/AddInput';
 import { useSources } from '../../../hooks/sources/useSources';
@@ -36,7 +41,7 @@ import { AddSourceModal } from '../../../components/modal/AddSourceModal';
 import { RemoveSourceModal } from '../../../components/modal/RemoveSourceModal';
 import { useDeleteStream, useCreateStream } from '../../../hooks/streams';
 import { MonitoringButton } from '../../../components/button/MonitoringButton';
-import { useGetMultiviewPreset } from '../../../hooks/multiviewPreset';
+import { useGetMultiviewLayout } from '../../../hooks/multiviewLayout';
 import { useMultiviews } from '../../../hooks/multiviews';
 import SourceList from '../../../components/sourceList/SourceList';
 import { LockButton } from '../../../components/lockButton/LockButton';
@@ -46,12 +51,14 @@ import { useAddSource } from '../../../hooks/sources/useAddSource';
 import { useGetFirstEmptySlot } from '../../../hooks/useGetFirstEmptySlot';
 import { useWebsocket } from '../../../hooks/useWebsocket';
 import { ConfigureMultiviewButton } from '../../../components/modal/configureMultiviewModal/ConfigureMultiviewButton';
+import { useUpdateSourceInputSlotOnMultiviewLayouts } from '../../../hooks/useUpdateSourceInputSlotOnMultiviewLayouts';
 
 export default function ProductionConfiguration({ params }: PageProps) {
   const t = useTranslate();
 
   //SOURCES
   const [sources] = useSources();
+  // TODO: Is this useEffect needed, filteredSources isn't used anymore?
   const [filteredSources, setFilteredSources] = useState(
     new Map<string, SourceWithId>()
   );
@@ -68,6 +75,7 @@ export default function ProductionConfiguration({ params }: PageProps) {
   >();
   const [createStream, loadingCreateStream] = useCreateStream();
   const [deleteStream, loadingDeleteStream] = useDeleteStream();
+
   //PRODUCTION
   const putProduction = usePutProduction();
   const getPresets = useGetPresets();
@@ -80,14 +88,17 @@ export default function ProductionConfiguration({ params }: PageProps) {
     productionSetup?.sources.map((prod) => prod._id) || [];
 
   //MULTIVIEWS
-  //TODO: move useGetMultiviewPreset into useMultiviews (refactor)
-  const getMultiviewPreset = useGetMultiviewPreset();
+  const [updateMuliviewLayouts, setUpdateMuliviewLayouts] = useState(false);
+  const getMultiviewLayout = useGetMultiviewLayout();
   const [updateMultiviewViews] = useMultiviews();
+  const [updateSourceInputSlotOnMultiviewLayouts] =
+    useUpdateSourceInputSlotOnMultiviewLayouts();
 
   //FROM LIVE API
   const [pipelines, loadingPipelines, , refreshPipelines] = usePipelines();
   const [controlPanels, loadingControlPanels, , refreshControlPanels] =
     useControlPanels();
+
   //UI STATE
   const [inventoryVisible, setInventoryVisible] = useState(false);
   const [isPresetDropdownHidden, setIsPresetDropdownHidden] = useState(true);
@@ -103,6 +114,8 @@ export default function ProductionConfiguration({ params }: PageProps) {
   const [closeWebsocket] = useWebsocket();
 
   const { locked } = useContext(GlobalContext);
+
+  const memoizedProduction = useMemo(() => productionSetup, [productionSetup]);
 
   const isAddButtonDisabled =
     selectedValue !== 'HTML' && selectedValue !== 'Media Player';
@@ -129,6 +142,13 @@ export default function ProductionConfiguration({ params }: PageProps) {
     });
     setAddSourceStatus(undefined);
   };
+
+  useEffect(() => {
+    if (updateMuliviewLayouts && productionSetup && !productionSetup.isActive) {
+      updateSourceInputSlotOnMultiviewLayouts(productionSetup);
+      setUpdateMuliviewLayouts(false);
+    }
+  }, [productionSetup, updateMuliviewLayouts]);
 
   const setSelectedControlPanel = (controlPanel: string[]) => {
     setProductionSetup((prevState) => {
@@ -242,6 +262,7 @@ export default function ProductionConfiguration({ params }: PageProps) {
     refreshProduction();
   }, []);
 
+  // TODO: Is this useEffect needed, filteredSources isn't used anymore?
   useEffect(() => {
     if (productionSetup) {
       const hasMissingSource = productionSetup?.sources.find(
@@ -350,7 +371,7 @@ export default function ProductionConfiguration({ params }: PageProps) {
       toast.error(t('production.missing_multiview'));
       return;
     }
-    const defaultMultiview = await getMultiviewPreset(
+    const defaultMultiview = await getMultiviewLayout(
       preset?.default_multiview_reference
     );
     setSelectedPreset(preset);
@@ -694,7 +715,7 @@ export default function ProductionConfiguration({ params }: PageProps) {
             disabled={productionSetup?.isActive || locked}
             preset={selectedPreset}
             updatePreset={updatePreset}
-            production={productionSetup}
+            production={memoizedProduction}
           />
           <StartProductionButton
             refreshProduction={refreshProduction}
@@ -741,9 +762,11 @@ export default function ProductionConfiguration({ params }: PageProps) {
                   locked={locked}
                   updateProduction={(updated) => {
                     updateProduction(productionSetup._id, updated);
+                    setUpdateMuliviewLayouts(true);
                   }}
                   onSourceUpdate={(source: SourceReference) => {
                     updateSource(source, productionSetup);
+                    setUpdateMuliviewLayouts(true);
                   }}
                   onSourceRemoval={(source: SourceReference) => {
                     if (productionSetup && productionSetup.isActive) {
@@ -761,6 +784,7 @@ export default function ProductionConfiguration({ params }: PageProps) {
                       );
                       if (!updatedSetup) return;
                       setProductionSetup(updatedSetup);
+                      setUpdateMuliviewLayouts(true);
                       putProduction(
                         updatedSetup._id.toString(),
                         updatedSetup
