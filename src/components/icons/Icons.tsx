@@ -23,7 +23,14 @@ import {
   IconLockOpen,
   IconPlugConnected,
   IconPlugConnectedX,
-  IconRefresh
+  IconRefresh,
+  IconSkull,
+  IconBulldozer,
+  IconBomb,
+  IconBiohazard,
+  IconAlertTriangle,
+  IconRouteOff,
+  IconAlertOctagon
 } from '@tabler/icons-react';
 
 interface IClassName {
@@ -95,6 +102,23 @@ const pickIcon = {
   ),
   IconRefresh: ({ className }: IClassName) => (
     <IconRefresh className={className} />
+  ),
+  IconSkull: ({ className }: IClassName) => <IconSkull className={className} />,
+  IconBulldozer: ({ className }: IClassName) => (
+    <IconBulldozer className={className} />
+  ),
+  IconBomb: ({ className }: IClassName) => <IconBomb className={className} />,
+  IconBiohazard: ({ className }: IClassName) => (
+    <IconBiohazard className={className} />
+  ),
+  IconAlertTriangle: ({ className }: IClassName) => (
+    <IconAlertTriangle className={className} />
+  ),
+  IconRouteOff: ({ className }: IClassName) => (
+    <IconRouteOff className={className} />
+  ),
+  IconAlertOctagon: ({ className }: IClassName) => (
+    <IconAlertOctagon className={className} />
   )
 };
 
