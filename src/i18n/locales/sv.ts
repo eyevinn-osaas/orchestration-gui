@@ -80,7 +80,8 @@ export const sv = {
     source: 'Källa',
     add: 'Lägg till',
     add_other_source_type: 'Lägg till annan källtyp',
-    configure_outputs: 'Konfigurera Outputs'
+    configure_outputs: 'Konfigurera Outputs',
+    manage_multiviewers: 'Uppdatera multiviewers'
   },
   configure_alignment_latency: {
     source_name: 'Källnamn',
@@ -684,7 +685,10 @@ export const sv = {
     layout_already_exist:
       'Konfigurationen {{layoutNameAlreadyExist}} skrivs över om du sparar',
     remove_multiview: 'Ta bort multiview',
-    add_another_multiview: 'Lägg till ny multiview'
+    add_another_multiview: 'Lägg till ny multiview',
+    confirm_update_multiviewers:
+      'Är du säker på att du vill uppdatera multiview för pågående produktion?',
+    confirm_update: 'Uppdatera multiviewers'
   },
   error: {
     missing_sources_in_db: 'Källor saknas, var god starta om produktionen.',

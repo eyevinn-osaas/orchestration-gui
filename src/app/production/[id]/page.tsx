@@ -57,6 +57,12 @@ import { useUpdateStream } from '../../../hooks/streams';
 import { usePutProductionPipelineSourceAlignmentAndLatency } from '../../../hooks/productions';
 import { useIngestSourceId } from '../../../hooks/ingests';
 import cloneDeep from 'lodash.clonedeep';
+import {
+  useAddMultiviewersOnRunningProduction,
+  useRemoveMultiviewersOnRunningProduction,
+  useUpdateMultiviewersOnRunningProduction
+} from '../../../hooks/workflow';
+import { MultiviewSettings } from '../../../interfaces/multiview';
 
 export default function ProductionConfiguration({ params }: PageProps) {
   const t = useTranslate();
@@ -94,6 +100,12 @@ export default function ProductionConfiguration({ params }: PageProps) {
   const [updateMultiviewViews] = useMultiviews();
   const [updateSourceInputSlotOnMultiviewLayouts] =
     useUpdateSourceInputSlotOnMultiviewLayouts();
+  const [addMultiviewersOnRunningProduction] =
+    useAddMultiviewersOnRunningProduction();
+  const [updateMultiviewersOnRunningProduction] =
+    useUpdateMultiviewersOnRunningProduction();
+  const [removeMultiviewersOnRunningProduction] =
+    useRemoveMultiviewersOnRunningProduction();
 
   //FROM LIVE API
   const [pipelines, loadingPipelines, , refreshPipelines] = usePipelines();
@@ -153,7 +165,7 @@ export default function ProductionConfiguration({ params }: PageProps) {
   };
 
   useEffect(() => {
-    if (updateMuliviewLayouts && productionSetup && !productionSetup.isActive) {
+    if (updateMuliviewLayouts && productionSetup) {
       updateSourceInputSlotOnMultiviewLayouts(productionSetup).then(
         (updatedSetup) => {
           if (!updatedSetup) return;
@@ -265,7 +277,12 @@ export default function ProductionConfiguration({ params }: PageProps) {
 
   const updatePreset = (preset: Preset) => {
     if (!productionSetup?._id) return;
-    putProduction(productionSetup?._id.toString(), {
+
+    const presetMultiviews = preset.pipelines[0].multiviews;
+    const productionMultiviews =
+      productionSetup.production_settings.pipelines[0].multiviews;
+
+    const updatedPreset = {
       ...productionSetup,
       production_settings: {
         ...preset,
@@ -283,7 +300,56 @@ export default function ProductionConfiguration({ params }: PageProps) {
           };
         })
       }
-    }).then(() => {
+    };
+
+    if (productionSetup.isActive && presetMultiviews && productionMultiviews) {
+      const productionMultiviewsMap = new Map(
+        productionMultiviews.map((item) => [item.multiview_id, item])
+      );
+      const presetMultiviewsMap = new Map(
+        presetMultiviews.map((item) => [item.multiview_id, item])
+      );
+
+      const additions: MultiviewSettings[] = [];
+      const updates: MultiviewSettings[] = [];
+
+      presetMultiviews.forEach((newItem) => {
+        const oldItem = productionMultiviewsMap.get(newItem.multiview_id);
+
+        if (!oldItem) {
+          additions.push(newItem);
+        } else if (JSON.stringify(oldItem) !== JSON.stringify(newItem)) {
+          updates.push(newItem);
+        }
+      });
+
+      const removals = productionMultiviews.filter(
+        (oldItem) => !presetMultiviewsMap.has(oldItem.multiview_id)
+      );
+
+      if (additions.length > 0) {
+        addMultiviewersOnRunningProduction(
+          (productionSetup?._id.toString(), updatedPreset),
+          additions
+        );
+      }
+
+      if (updates.length > 0) {
+        updateMultiviewersOnRunningProduction(
+          (productionSetup?._id.toString(), updatedPreset),
+          updates
+        );
+      }
+
+      if (removals.length > 0) {
+        removeMultiviewersOnRunningProduction(
+          (productionSetup?._id.toString(), updatedPreset),
+          removals
+        );
+      }
+    }
+
+    putProduction(productionSetup?._id.toString(), updatedPreset).then(() => {
       refreshProduction();
     });
   };
@@ -735,7 +801,7 @@ export default function ProductionConfiguration({ params }: PageProps) {
     <>
       <HeaderNavigation>
         <input
-          className="m-2 text-4xl text-p text-center bg-transparent grow text-start"
+          className="m-2 text-4xl text-p bg-transparent grow text-start"
           type="text"
           value={configurationName}
           onChange={(e) => {
@@ -778,7 +844,7 @@ export default function ProductionConfiguration({ params }: PageProps) {
             updatePreset={updatePreset}
           />
           <ConfigureMultiviewButton
-            disabled={productionSetup?.isActive || locked}
+            disabled={locked || !hasSelectedPipelines()}
             preset={selectedPreset}
             updatePreset={updatePreset}
             production={memoizedProduction}
@@ -786,7 +852,11 @@ export default function ProductionConfiguration({ params }: PageProps) {
           <StartProductionButton
             refreshProduction={refreshProduction}
             production={productionSetup}
-            disabled={(!selectedPreset ? true : false) || locked}
+            disabled={
+              (!selectedPreset ? true : false) ||
+              locked ||
+              !hasSelectedPipelines()
+            }
           />
         </div>
       </HeaderNavigation>

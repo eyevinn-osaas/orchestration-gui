@@ -78,7 +78,8 @@ export const en = {
     source: 'Source',
     add: 'Add',
     add_other_source_type: 'Add other source type',
-    configure_outputs: 'Configure Outputs'
+    configure_outputs: 'Configure Outputs',
+    manage_multiviewers: 'Manage multiviewers'
   },
   configure_alignment_latency: {
     configure_alignment_latency:
@@ -680,7 +681,10 @@ export const en = {
     layout_already_exist:
       'Layout {{layoutNameAlreadyExist}} will be replaced on save',
     remove_multiview: 'Remove multiview',
-    add_another_multiview: 'Add another multiview'
+    add_another_multiview: 'Add another multiview',
+    confirm_update_multiviewers:
+      'Are you sure you want to update multiviewers for the running production?',
+    confirm_update: 'Update multiviewers'
   },
   error: {
     missing_sources_in_db: 'Missing sources, please restart production.',
