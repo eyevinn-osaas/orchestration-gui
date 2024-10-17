@@ -87,3 +87,17 @@ export function useDeleteMultiviewLayout() {
     throw await response.text();
   };
 }
+
+export function useDeleteMultiviewLayouts() {
+  return async (id: string): Promise<void> => {
+    const response = await fetch(`/api/manager/multiviews`, {
+      method: 'DELETE',
+      headers: [['x-api-key', `Bearer ${API_SECRET_KEY}`]],
+      body: JSON.stringify(id)
+    });
+    if (response.ok) {
+      return;
+    }
+    throw await response.text();
+  };
+}
