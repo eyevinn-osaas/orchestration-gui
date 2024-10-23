@@ -2,6 +2,7 @@ import { Db, ObjectId, UpdateResult } from 'mongodb';
 import { getDatabase } from '../mongoClient/dbClient';
 import { Production, ProductionWithId } from '../../interfaces/production';
 import { Log } from '../logger';
+import { SourceReference } from '../../interfaces/Source';
 
 export async function getProductions(): Promise<Production[]> {
   const db = await getDatabase();
@@ -42,7 +43,14 @@ export async function putProduction(
               _id: newSourceId,
               type: singleSource.type,
               label: singleSource.label,
-              input_slot: singleSource.input_slot
+              input_slot: singleSource.input_slot,
+              html_data:
+                (singleSource.type === 'html' && singleSource.html_data) ||
+                undefined,
+              media_data:
+                (singleSource.type === 'mediaplayer' &&
+                  singleSource.media_data) ||
+                undefined
             };
       })
     : [];
