@@ -26,10 +26,12 @@ type ChangeLayout = {
 
 export default function MultiviewLayoutSettings({
   production,
-  setNewMultiviewPreset
+  setNewMultiviewPreset,
+  layoutModalOpen
 }: {
   production: Production | undefined;
   setNewMultiviewPreset: (preset: TMultiviewLayout | null) => void;
+  layoutModalOpen: boolean;
 }) {
   const [selectedMultiviewPreset, setSelectedMultiviewPreset] =
     useState<MultiviewPreset | null>(null);
@@ -85,6 +87,14 @@ export default function MultiviewLayoutSettings({
   }, [multiviewPresets]);
 
   // Refresh the layout list when a layout is deleted
+  useEffect(() => {
+    if (layoutModalOpen) {
+      setRefresh(true);
+    } else {
+      setRefresh(false);
+    }
+  }, [layoutModalOpen]);
+
   useEffect(() => {
     if (multiviewLayouts) {
       setRefresh(false);
