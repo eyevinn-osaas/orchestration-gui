@@ -97,13 +97,6 @@ export async function runSyncInventory() {
         ...inventorySource.srt,
         video_format: apiSource.srt.video_format
       };
-      fetch('/api/manager/inventory', {
-        method: 'POST',
-        body: JSON.stringify({
-          source: updatedSrt
-        }),
-        headers: [['x-api-key', `Bearer ${API_SECRET_KEY}`]]
-      });
 
       return updatedSrt;
     } else if (
