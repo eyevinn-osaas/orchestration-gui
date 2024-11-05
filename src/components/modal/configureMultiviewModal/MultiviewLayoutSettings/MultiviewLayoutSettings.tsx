@@ -112,13 +112,19 @@ export default function MultiviewLayoutSettings({
   }, [multiviewLayouts]);
 
   useEffect(() => {
-    if (newPresetName && selectedMultiviewPreset) {
+    if (newPresetName && selectedMultiviewPreset && production) {
       setNewMultiviewPreset({
         ...selectedMultiviewPreset,
-        name: newPresetName
+        name: newPresetName,
+        productionId: production._id
       });
     }
-  }, [newPresetName, selectedMultiviewPreset, setNewMultiviewPreset]);
+  }, [
+    newPresetName,
+    selectedMultiviewPreset,
+    setNewMultiviewPreset,
+    production
+  ]);
 
   useEffect(() => {
     if (multiviewLayout) {
