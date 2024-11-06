@@ -801,7 +801,7 @@ export default function ProductionConfiguration({ params }: PageProps) {
     }
   };
 
-  const handleRemoveSource = async () => {
+  const handleRemoveSource = async (ingestSource?: SourceWithId) => {
     if (productionSetup && productionSetup.isActive && selectedSourceRef) {
       const multiviews =
         productionSetup.production_settings.pipelines[0].multiviews;
@@ -945,7 +945,19 @@ export default function ProductionConfiguration({ params }: PageProps) {
         }
       }
 
-      const updatedSetup = removeSetupItem(selectedSourceRef, productionSetup);
+      const ingestSourceId =
+        ingestSource !== undefined
+          ? await getIngestSourceId(
+              ingestSource.ingest_name,
+              ingestSource.ingest_source_name
+            )
+          : undefined;
+
+      const updatedSetup = removeSetupItem(
+        selectedSourceRef,
+        productionSetup,
+        ingestSourceId
+      );
 
       if (!updatedSetup) return;
       updateSourceInputSlotOnMultiviewLayouts(updatedSetup).then((result) => {
@@ -954,6 +966,7 @@ export default function ProductionConfiguration({ params }: PageProps) {
         updateMultiview(selectedSourceRef, result);
         setRemoveSourceModal(false);
         setSelectedSourceRef(undefined);
+        setSelectedSource(undefined);
       });
     }
   };
@@ -1096,6 +1109,7 @@ export default function ProductionConfiguration({ params }: PageProps) {
                     ingestSource?: ISource
                   ) => {
                     if (productionSetup && productionSetup.isActive) {
+                      setSelectedSource(ingestSource);
                       setSelectedSourceRef(source);
                       setRemoveSourceModal(true);
                     } else if (productionSetup) {
@@ -1133,7 +1147,7 @@ export default function ProductionConfiguration({ params }: PageProps) {
                     name={selectedSourceRef.label}
                     open={removeSourceModal}
                     onAbort={handleAbortRemoveSource}
-                    onConfirm={handleRemoveSource}
+                    onConfirm={() => handleRemoveSource(selectedSource)}
                     status={deleteSourceStatus}
                     loading={
                       loadingDeleteStream ||
