@@ -70,7 +70,6 @@ import { useDeleteHtmlSource } from '../../../hooks/renderingEngine/useDeleteHtm
 import { useDeleteMediaSource } from '../../../hooks/renderingEngine/useDeleteMediaSource';
 import { useCreateHtmlSource } from '../../../hooks/renderingEngine/useCreateHtmlSource';
 import { useCreateMediaSource } from '../../../hooks/renderingEngine/useCreateMediaSource';
-import { useRenderingEngine } from '../../../hooks/renderingEngine/useRenderingEngine';
 
 export default function ProductionConfiguration({ params }: PageProps) {
   const t = useTranslate();
@@ -146,7 +145,6 @@ export default function ProductionConfiguration({ params }: PageProps) {
   const [deleteMediaSource, deleteMediaLoading] = useDeleteMediaSource();
   const [createHtmlSource, createHtmlLoading] = useCreateHtmlSource();
   const [createMediaSource, createMediaLoading] = useCreateMediaSource();
-  const [getRenderingEngine, renderingEngineLoading] = useRenderingEngine();
 
   const { locked } = useContext(GlobalContext);
 
@@ -202,8 +200,9 @@ export default function ProductionConfiguration({ params }: PageProps) {
     const selectedPresetCopy = cloneDeep(selectedPreset);
     const foundPipeline = selectedPresetCopy?.pipelines[pipelineIndex];
     if (foundPipeline) {
-      foundPipeline.outputs = [];
+      foundPipeline.outputs = foundPipeline.outputs || [];
       foundPipeline.pipeline_name = pipelineName;
+      foundPipeline.pipeline_id = id;
     }
     setSelectedPreset(selectedPresetCopy);
     setProductionSetup((prevState) => {
@@ -211,7 +210,8 @@ export default function ProductionConfiguration({ params }: PageProps) {
       if (!updatedPipelines) return;
       updatedPipelines[pipelineIndex].pipeline_name = pipelineName;
       updatedPipelines[pipelineIndex].pipeline_id = id;
-      updatedPipelines[pipelineIndex].outputs = [];
+      updatedPipelines[pipelineIndex].outputs =
+        prevState.production_settings.pipelines[pipelineIndex].outputs || [];
       putProduction(prevState._id, {
         ...prevState,
         production_settings: {
@@ -927,7 +927,6 @@ export default function ProductionConfiguration({ params }: PageProps) {
           const pipelineId =
             productionSetup.production_settings.pipelines[i].pipeline_id;
           if (pipelineId) {
-            getRenderingEngine(pipelineId);
             if (selectedSourceRef.type === 'html') {
               await deleteHtmlSource(
                 pipelineId,
@@ -1045,7 +1044,9 @@ export default function ProductionConfiguration({ params }: PageProps) {
             production={memoizedProduction}
           />
           <StartProductionButton
-            refreshProduction={refreshProduction}
+            refreshProduction={() => {
+              refreshProduction();
+            }}
             production={productionSetup}
             disabled={
               (!selectedPreset ? true : false) ||

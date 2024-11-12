@@ -49,9 +49,15 @@ export async function createPipelineHtmlSource(
   data: HTMLSource,
   source: SourceReference
 ) {
+  const payload = {
+    height: Number(data.height),
+    input_slot: Number(inputSlot),
+    url: data.url || '',
+    width: Number(data.width)
+  };
+
   try {
     const { production_settings } = production;
-    const htmlResults = [];
 
     for (let i = 0; i < production_settings.pipelines.length; i++) {
       const response = await fetch(
@@ -65,21 +71,34 @@ export async function createPipelineHtmlSource(
           headers: {
             authorization: getAuthorizationHeader()
           },
-          body: JSON.stringify({
-            height: Number(data.height),
-            input_slot: Number(inputSlot),
-            url: data.url || '',
-            width: Number(data.width)
-          })
+          body: JSON.stringify(payload)
         }
       );
+      const text = await response.text();
 
-      if (response.ok) {
-        const text = await response.text();
-        const jsonResponse = text ? JSON.parse(text) : {};
-        htmlResults.push(jsonResponse);
+      if (response.status === 201) {
+        if (text.trim().length > 0) {
+          Log().warn('Unexpected content for 201 response:', text);
+        }
+      } else if (
+        response.status === 400 ||
+        response.status === 404 ||
+        response.status === 500
+      ) {
+        try {
+          const errorResponse = JSON.parse(text);
+          Log().error('API error response:', errorResponse);
+          throw new Error(
+            `API error ${response.status}: ${errorResponse.message}`
+          );
+        } catch (parseError) {
+          Log().error('Failed to parse error response as JSON:', text);
+          throw new Error(`API error ${response.status}: ${text}`);
+        }
       } else {
-        throw await response.json();
+        Log().error(`Unexpected status code ${response.status} received`);
+        Log().error('Response body:', text);
+        throw new Error(`Unexpected response status: ${response.status}`);
       }
     }
   } catch (e) {
@@ -273,7 +292,11 @@ export async function deleteHtmlFromPipeline(
   );
   if (response.ok) {
     const text = await response.text();
-    return text ? JSON.parse(text) : {};
+
+    if (text) {
+      return JSON.parse(text);
+    }
+    return;
   }
   throw await response.json();
 }
@@ -308,9 +331,13 @@ export async function createPipelineMediaSource(
   data: MediaSource,
   source: SourceReference
 ) {
+  const payload = {
+    filename: data.filename,
+    input_slot: Number(inputSlot)
+  };
+
   try {
     const { production_settings } = production;
-    const mediaResults = [];
 
     for (let i = 0; i < production_settings.pipelines.length; i++) {
       const response = await fetch(
@@ -324,18 +351,34 @@ export async function createPipelineMediaSource(
           headers: {
             authorization: getAuthorizationHeader()
           },
-          body: JSON.stringify({
-            filename: data.filename,
-            input_slot: Number(inputSlot)
-          })
+          body: JSON.stringify(payload)
         }
       );
-      if (response.ok) {
-        const text = await response.text();
-        const jsonResponse = text ? JSON.parse(text) : {};
-        mediaResults.push(jsonResponse);
+      const text = await response.text();
+
+      if (response.status === 201) {
+        if (text.trim().length > 0) {
+          Log().warn('Unexpected content for 201 response:', text);
+        }
+      } else if (
+        response.status === 400 ||
+        response.status === 404 ||
+        response.status === 500
+      ) {
+        try {
+          const errorResponse = JSON.parse(text);
+          Log().error('API error response:', errorResponse);
+          throw new Error(
+            `API error ${response.status}: ${errorResponse.message}`
+          );
+        } catch (parseError) {
+          Log().error('Failed to parse error response as JSON:', text);
+          throw new Error(`API error ${response.status}: ${text}`);
+        }
       } else {
-        throw await response.json();
+        Log().error(`Unexpected status code ${response.status} received`);
+        Log().error('Response body:', text);
+        throw new Error(`Unexpected response status: ${response.status}`);
       }
     }
   } catch (e) {
@@ -512,7 +555,11 @@ export async function deleteMediaFromPipeline(
   );
   if (response.ok) {
     const text = await response.text();
-    return text ? JSON.parse(text) : {};
+
+    if (text) {
+      return JSON.parse(text);
+    }
+    return;
   }
   throw await response.json();
 }
@@ -540,7 +587,6 @@ export async function getPipelineRenderingEngine(
     try {
       return await response.json();
     } catch (error) {
-      console.error('Failed to parse successful JSON response:', error);
       throw new Error('Parsing error in successful response.');
     }
   }
@@ -552,7 +598,88 @@ export async function getPipelineRenderingEngine(
     try {
       throw JSON.parse(responseText);
     } catch (error) {
-      console.error('Failed to parse JSON error response:', error);
+      throw new Error(`Failed to parse JSON error response: ${responseText}`);
+    }
+  } else {
+    throw new Error(`Unexpected non-JSON response: ${responseText}`);
+  }
+}
+
+export async function getPipelineRenderingEngineHtml(
+  pipelineUuid: string
+): Promise<ResourcesHTMLBrowser[]> {
+  const response = await fetch(
+    new URL(
+      LIVE_BASE_API_PATH + `/pipelines/${pipelineUuid}/renderingengine/html`,
+      process.env.LIVE_URL
+    ),
+    {
+      method: 'GET',
+      headers: {
+        authorization: getAuthorizationHeader()
+      },
+      next: {
+        revalidate: 0
+      }
+    }
+  );
+
+  if (response.ok) {
+    try {
+      return await response.json();
+    } catch (error) {
+      throw new Error('Parsing error in successful response.');
+    }
+  }
+
+  const contentType = response.headers.get('content-type');
+  const responseText = await response.text();
+
+  if (contentType && contentType.includes('application/json')) {
+    try {
+      throw JSON.parse(responseText);
+    } catch (error) {
+      throw new Error(`Failed to parse JSON error response: ${responseText}`);
+    }
+  } else {
+    throw new Error(`Unexpected non-JSON response: ${responseText}`);
+  }
+}
+
+export async function getPipelineRenderingEngineMedia(
+  pipelineUuid: string
+): Promise<ResourcesMediaPlayer[]> {
+  const response = await fetch(
+    new URL(
+      LIVE_BASE_API_PATH + `/pipelines/${pipelineUuid}/renderingengine/media`,
+      process.env.LIVE_URL
+    ),
+    {
+      method: 'GET',
+      headers: {
+        authorization: getAuthorizationHeader()
+      },
+      next: {
+        revalidate: 0
+      }
+    }
+  );
+
+  if (response.ok) {
+    try {
+      return await response.json();
+    } catch (error) {
+      throw new Error('Parsing error in successful response.');
+    }
+  }
+
+  const contentType = response.headers.get('content-type');
+  const responseText = await response.text();
+
+  if (contentType && contentType.includes('application/json')) {
+    try {
+      throw JSON.parse(responseText);
+    } catch (error) {
       throw new Error(`Failed to parse JSON error response: ${responseText}`);
     }
   } else {
