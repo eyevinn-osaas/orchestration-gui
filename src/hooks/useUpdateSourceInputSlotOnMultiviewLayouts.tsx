@@ -47,6 +47,9 @@ export function useUpdateSourceInputSlotOnMultiviewLayouts(): CallbackHook<
               if ((view.id && view.id.length < 5) || preview || program) {
                 return {
                   ...view,
+                  input_slot: isUpdatedInputSlot
+                    ? isUpdatedInputSlot.input_slot
+                    : view.input_slot,
                   label: isUpdatedLabel || view.label
                 };
               } else if (isUpdatedInputSlot || isSameInputSlot) {
@@ -60,7 +63,8 @@ export function useUpdateSourceInputSlotOnMultiviewLayouts(): CallbackHook<
               } else {
                 return {
                   ...view,
-                  input_slot: 0
+                  input_slot: 0,
+                  label: ''
                 };
               }
             }
