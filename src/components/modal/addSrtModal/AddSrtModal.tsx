@@ -10,6 +10,7 @@ import { useIngests } from '../../../hooks/ingests';
 import Input from '../../input/Input';
 import { ResourcesSourceResponse } from '../../../../types/ateliere-live';
 import { useIngestSources } from '../../../hooks/ingests';
+import toast from 'react-hot-toast';
 
 type AddSrtModalProps = {
   open: boolean;
@@ -20,6 +21,8 @@ type AddSrtModalProps = {
     srtPayload: SrtSource,
     callback: () => void
   ) => void;
+  createSrtError?: string | null;
+  createSrtSuccessful?: boolean;
 };
 
 type SelectOptions = 'Caller' | 'Listener';
@@ -28,7 +31,9 @@ export function AddSrtModal({
   open,
   loading,
   onAbort,
-  onConfirm
+  onConfirm,
+  createSrtError,
+  createSrtSuccessful
 }: AddSrtModalProps) {
   const ingests = useIngests();
   const t = useTranslate();
@@ -42,13 +47,16 @@ export function AddSrtModal({
   const [remotePort, setRemotePort] = useState<number>(1234);
   const [latency, setLatency] = useState<number>(120);
   const [name, setName] = useState<string>('My SRT source');
-  const [passphrase, setPassphrase] = useState<string>();
+  const [passphrase, setPassphrase] = useState<string>('');
+  const [isPassphraseError, setIsPassphraseError] = useState<boolean>(false);
   const [isNameError, setIsNameError] = useState<boolean>(false);
   const [isIngestNameError, setIsIngestNameError] = useState<boolean>(false);
   const [isLocalPortError, setIsLocalPortError] = useState<boolean>(false);
   const [isRemotePortError, setIsRemotePortError] = useState<boolean>(false);
   const [isLocalIpError, setIsLocalIpError] = useState<boolean>(false);
   const [isRemoteIpError, setIsRemoteIpError] = useState<boolean>(false);
+  const [isDuplicateNameError, setIsDuplicateNameError] =
+    useState<boolean>(false);
   const [getIngestSources, ingestSourcesLoading] = useIngestSources();
 
   const [isPortAlreadyInUseError, setIsPortAlreadyInUseError] =
@@ -76,6 +84,12 @@ export function AddSrtModal({
       }
     }
   }, [ingestName, ingests]);
+
+  useEffect(() => {
+    if (createSrtError && createSrtError !== '') {
+      toast.error(createSrtError || '');
+    }
+  }, [createSrtError]);
 
   useEffect(() => {
     fetchIngestSources();
@@ -109,7 +123,7 @@ export function AddSrtModal({
         setIsNameError(false);
       }
     }
-  }, [isNameError]);
+  }, [isNameError, name]);
 
   useEffect(() => {
     if (mode === 'Caller' && isPortAlreadyInUseError) {
@@ -136,10 +150,30 @@ export function AddSrtModal({
   }, [remoteIp]);
 
   useEffect(() => {
+    if (createSrtSuccessful) {
+      handleCancel();
+    }
+  }, [createSrtSuccessful]);
+
+  useEffect(() => {
     if (remotePort) {
       setIsRemotePortError(false);
     }
   }, [remotePort]);
+
+  useEffect(() => {
+    if (passphrase || passphrase === '') {
+      setIsPassphraseError(false);
+    }
+  }, [passphrase]);
+
+  useEffect(() => {
+    if (ingestName) {
+      setIsIngestNameError(false);
+      setIsDuplicateNameError(false);
+      setIsPortAlreadyInUseError(false);
+    }
+  }, [ingestName]);
 
   const handleCloseModal = () => {
     setIsNameError(false);
@@ -149,6 +183,8 @@ export function AddSrtModal({
     setIsRemoteIpError(false);
     setIsRemotePortError(false);
     setIsPortAlreadyInUseError(false);
+    setIsPassphraseError(false);
+    setIsDuplicateNameError(false);
     onAbort();
   };
 
@@ -171,6 +207,8 @@ export function AddSrtModal({
     setIsRemoteIpError(false);
     setIsRemotePortError(false);
     setIsPortAlreadyInUseError(false);
+    setIsPassphraseError(false);
+    setIsDuplicateNameError(false);
 
     onAbort();
   };
@@ -221,11 +259,28 @@ export function AddSrtModal({
       hasError = true;
     }
 
-    if (hasError) {
-      return;
+    if (
+      passphrase &&
+      passphrase !== '' &&
+      (passphrase.length < 10 || passphrase.length > 79)
+    ) {
+      setIsPassphraseError(true);
+      hasError = true;
     }
 
     const srtSources = await fetchIngestSources();
+
+    if (srtSources.length > 0) {
+      const duplicateNames = srtSources.some((srt) => srt.name === name);
+      if (duplicateNames) {
+        setIsDuplicateNameError(true);
+        hasError = true;
+      }
+    }
+
+    if (hasError) {
+      return;
+    }
 
     if (srtSources.length > 0 && mode === 'Listener') {
       const usedPorts: number[] = [];
@@ -242,11 +297,9 @@ export function AddSrtModal({
         setIsPortAlreadyInUseError(false);
 
         onConfirm(ingestUuid, srtPayload, () => fetchIngestSources());
-        handleCancel();
       }
     } else {
       onConfirm(ingestUuid, srtPayload, () => fetchIngestSources());
-      handleCancel();
     }
   };
 
@@ -332,12 +385,21 @@ export function AddSrtModal({
               className="w-full ml-2"
               type="text"
               value={name}
-              onChange={handleInputChange(setName, setIsNameError)}
+              onChange={handleInputChange(
+                setName,
+                setIsNameError,
+                setIsDuplicateNameError
+              )}
               error={isNameError}
             />
             {isNameError && (
               <p className="text-xs text-button-delete mt-2">
                 {t('inventory_list.no_name')}
+              </p>
+            )}
+            {isDuplicateNameError && (
+              <p className="text-xs text-button-delete mt-2">
+                {t('inventory_list.duplicate_name_error')}
               </p>
             )}
           </span>
@@ -455,6 +517,11 @@ export function AddSrtModal({
               value={passphrase}
               onChange={handleInputChange(setPassphrase)}
             />
+            {isPassphraseError && (
+              <p className="text-xs text-button-delete mt-2">
+                {t('inventory_list.passphrase_error')}
+              </p>
+            )}
           </span>
         </span>
       </div>
