@@ -57,5 +57,5 @@ EXPOSE 3000
 
 ENV PORT=3000
 
-ENTRYPOINT ["/app/docker-entrypoint-sh"]
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
 CMD ["node", "server.js"]
