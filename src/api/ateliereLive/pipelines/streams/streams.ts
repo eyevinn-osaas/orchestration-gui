@@ -66,6 +66,7 @@ export async function createStream(
         return pipeline.uuid;
       })
     );
+
     const ingestUuid = await getUuidFromIngestName(
       source.ingest_name,
       false
@@ -75,10 +76,11 @@ export async function createStream(
     });
 
     const sourceId = await getSourceIdFromSourceName(
-      ingestUuid,
+      ingestUuid || '',
       source.ingest_source_name,
       false
     );
+
     const audioMapping =
       source.audio_stream.audio_mapping &&
       source.audio_stream.audio_mapping.length > 0
@@ -86,6 +88,7 @@ export async function createStream(
         : [[0, 1]];
 
     await initDedicatedPorts();
+
     for (const pipeline of production_settings.pipelines) {
       const availablePorts = getAvailablePortsForIngest(
         source.ingest_name,
@@ -98,31 +101,43 @@ export async function createStream(
       }
 
       const availablePort = availablePorts.values().next().value;
+      if (!availablePort)
+        throw `Allocated port ${availablePort} on '${source.ingest_name}' for ${source.ingest_source_name} cannot be undefined`;
       Log().info(
         `Allocated port ${availablePort} on '${source.ingest_name}' for ${source.ingest_source_name}`
       );
+
+      const pipelineSource = pipeline.sources?.find(
+        (s) =>
+          s.ingest_source_name === source.ingest_source_name &&
+          s.ingest_name === source.ingest_name
+      );
+
       const stream: PipelineStreamSettings = {
+        ingest_id: ingestUuid || '',
+        source_id: sourceId || 0,
         pipeline_id: pipeline.pipeline_id!,
-        alignment_ms: pipeline.alignment_ms,
-        audio_format: pipeline.audio_format,
-        audio_sampling_frequency: pipeline.audio_sampling_frequency,
-        bit_depth: pipeline.bit_depth,
-        convert_color_range: pipeline.convert_color_range,
-        encoder: pipeline.encoder,
-        encoder_device: pipeline.encoder_device,
-        format: pipeline.format,
+        input_slot: input_slot,
+        alignment_ms:
+          pipelineSource?.settings.alignment_ms || pipeline.alignment_ms,
+        max_network_latency_ms:
+          pipelineSource?.settings.max_network_latency_ms ||
+          pipeline.max_network_latency_ms,
+        width: pipeline.width,
+        height: pipeline.height,
         frame_rate_d: pipeline.frame_rate_d,
         frame_rate_n: pipeline.frame_rate_n,
+        format: pipeline.format,
+        encoder: pipeline.encoder,
+        encoder_device: pipeline.encoder_device,
         gop_length: pipeline.gop_length,
-        height: pipeline.height,
-        max_network_latency_ms: pipeline.max_network_latency_ms,
         pic_mode: pipeline.pic_mode,
-        speed_quality_balance: pipeline.speed_quality_balance,
         video_kilobit_rate: pipeline.video_kilobit_rate,
-        width: pipeline.width,
-        ingest_id: ingestUuid,
-        source_id: sourceId,
-        input_slot,
+        bit_depth: pipeline.bit_depth,
+        speed_quality_balance: pipeline.speed_quality_balance,
+        convert_color_range: pipeline.convert_color_range,
+        audio_sampling_frequency: pipeline.audio_sampling_frequency,
+        audio_format: pipeline.audio_format,
         audio_mapping: JSON.stringify(audioMapping),
         interfaces: [
           {
@@ -131,6 +146,7 @@ export async function createStream(
           }
         ]
       };
+
       try {
         Log().info(
           `Connecting '${source.ingest_name}/${ingestUuid}}:${source.ingest_source_name}' to '${pipeline.pipeline_name}/${pipeline.pipeline_id}'`
@@ -147,6 +163,7 @@ export async function createStream(
         Log().info(
           `Stream '${result.stream_uuid}' from '${source.ingest_name}/${ingestUuid}' to '${pipeline.pipeline_name}/${pipeline.pipeline_id}' connected`
         );
+
         sourceToPipelineStreams.push({
           source_id: source._id.toString(),
           stream_uuid: result.stream_uuid,
@@ -254,7 +271,7 @@ export async function createStream(
         };
       }
       const updatedViewsForSource = viewsForSource.map((v) => {
-        return { ...v, label: source.name };
+        return { ...v, label: v.label || source.name };
       });
 
       const updatedViews = [
@@ -346,6 +363,29 @@ export async function deleteStream(streamUuid: string) {
   );
   if (response.ok) {
     return;
+  }
+  throw await response.json();
+}
+
+export async function updateStream(streamUuid: string, alignment_ms: number) {
+  const response = await fetch(
+    new URL(
+      LIVE_BASE_API_PATH + `/streams/${streamUuid}`,
+      process.env.LIVE_URL
+    ),
+    {
+      method: 'PATCH',
+      headers: {
+        authorization: getAuthorizationHeader()
+      },
+      body: JSON.stringify({ alignment_ms: alignment_ms }),
+      next: {
+        revalidate: 0
+      }
+    }
+  );
+  if (response.ok) {
+    return true;
   }
   throw await response.json();
 }

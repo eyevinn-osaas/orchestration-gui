@@ -5,35 +5,45 @@ import { SourceReference } from '../../interfaces/Source';
 import { Production } from '../../interfaces/production';
 import DragItem from '../dragElement/DragItem';
 import SourceCard from '../sourceCard/SourceCard';
-import { EmptySlotCard } from '../emptySlotCard/EmptySlotCard';
 import { ISource, useDragableItems } from '../../hooks/useDragableItems';
+import { EmptySlotCard } from '../emptySlotCard/EmptySlotCard';
 
 export default function SourceCards({
   productionSetup,
+  locked,
+  loading,
   updateProduction,
   onSourceUpdate,
-  onSourceRemoval
+  onSourceRemoval,
+  onConfirm
 }: {
   productionSetup: Production;
+  locked: boolean;
+  loading: boolean;
   updateProduction: (updated: Production) => void;
-  onSourceUpdate: (source: SourceReference, sourceItem: ISource) => void;
-  onSourceRemoval: (source: SourceReference) => void;
+  onSourceUpdate: (source: SourceReference) => void;
+  onSourceRemoval: (source: SourceReference, ingestSource?: ISource) => void;
+  onConfirm: (
+    source: ISource,
+    data: {
+      pipeline_uuid: string;
+      stream_uuid: string;
+      alignment: number;
+      latency: number;
+    }[],
+    shouldRestart?: boolean
+  ) => Promise<void>;
 }) {
-  const [items, moveItem, loading] = useDragableItems(productionSetup.sources);
+  const [items, moveItem] = useDragableItems(productionSetup.sources);
+  const itemsToAdd: SourceReference[] = [];
   const [selectingText, setSelectingText] = useState(false);
-  const currentOrder: SourceReference[] = items.map((source) => {
-    return {
-      _id: source._id.toString(),
-      label: source.label,
-      input_slot: source.input_slot,
-      stream_uuids: source.stream_uuids
-    };
-  });
-
+  if (!items) return null;
+  const isISource = (source: SourceReference | ISource): source is ISource => {
+    return 'src' in source;
+  };
   const gridItems: React.JSX.Element[] = [];
   let tempItems = [...items];
   let firstEmptySlot = items.length + 1;
-
   if (!items || items.length === 0) return null;
   for (let i = 0; i < items[items.length - 1].input_slot; i++) {
     if (!items.some((source) => source.input_slot === i + 1)) {
@@ -41,59 +51,80 @@ export default function SourceCards({
       break;
     }
   }
-  for (let i = 0; i < items[items.length - 1].input_slot; i++) {
-    // console.log(`On input slot: ${i + 1}`);
-    // console.log(`Checking sources:`);
-    // console.log(tempItems);
+  const productionSources = productionSetup.sources;
+
+  for (const item of items) {
+    if (isISource(item)) {
+      const itemId =
+        typeof item._id === 'string' ? item._id : item._id.toString();
+      const itemAsRef: SourceReference = {
+        _id: itemId,
+        type: 'ingest_source',
+        label: item.label,
+        stream_uuids: item.stream_uuids,
+        input_slot: item.input_slot
+      };
+      itemsToAdd.push(itemAsRef);
+    } else {
+      itemsToAdd.push(item);
+    }
+  }
+
+  for (let i = 0; i < itemsToAdd[itemsToAdd.length - 1].input_slot; i++) {
     tempItems.every((source) => {
+      const id = source._id ? source._id : '';
+      const isSource = isISource(source);
       if (source.input_slot === i + 1) {
-        // console.log(`Found source on input slot: ${i + 1}`);
-        // console.log(`Removing source "${source.name}" from sources list`);
         tempItems = tempItems.filter((i) => i._id !== source._id);
-        // console.log(`Adding source "${source.name}" to grid`);
-        if (!productionSetup.isActive) {
+        if (!productionSetup.isActive && !locked) {
           gridItems.push(
             <DragItem
-              key={`${source.ingest_source_name}-${source.input_slot}-key`}
-              id={source._id}
+              key={id === typeof String ? id : id.toString()}
+              id={id}
               onMoveItem={moveItem}
               previousOrder={productionSetup.sources}
-              currentOrder={currentOrder}
+              currentOrder={itemsToAdd}
               productionSetup={productionSetup}
               updateProduction={updateProduction}
               selectingText={selectingText}
             >
               <SourceCard
-                source={source}
-                label={source.label}
-                src={source.src}
+                source={isSource ? source : undefined}
+                sourceRef={
+                  isSource
+                    ? productionSources.find((s) => s._id === source._id)
+                    : source
+                }
                 onSourceUpdate={onSourceUpdate}
                 onSourceRemoval={onSourceRemoval}
-                onSelectingText={(isSelecting: boolean) =>
-                  setSelectingText(isSelecting)
-                }
+                onSelectingText={(isSelecting) => setSelectingText(isSelecting)}
+                productionSetup={productionSetup}
+                onConfirm={onConfirm}
+                loading={loading}
               />
             </DragItem>
           );
         } else {
           gridItems.push(
             <SourceCard
-              key={`${source.ingest_source_name}-${source.input_slot}-key`}
-              source={source}
-              label={source.label}
-              src={source.src}
+              key={id === typeof String ? id : id.toString()}
+              source={isSource ? source : undefined}
+              sourceRef={
+                isSource
+                  ? productionSources.find((s) => s._id === source._id)
+                  : source
+              }
               onSourceUpdate={onSourceUpdate}
               onSourceRemoval={onSourceRemoval}
-              onSelectingText={(isSelecting: boolean) =>
-                setSelectingText(isSelecting)
-              }
+              onSelectingText={(isSelecting) => setSelectingText(isSelecting)}
+              onConfirm={onConfirm}
+              productionSetup={productionSetup}
+              loading={loading}
             />
           );
         }
         return false;
       } else {
-        // console.log(`No source found on input slot: ${i + 1}`);
-        // console.log(`Adding empty slot to grid`);
         if (productionSetup.isActive) {
           gridItems.push(
             <EmptySlotCard
@@ -103,7 +134,6 @@ export default function SourceCards({
             />
           );
         }
-
         return false;
       }
     });

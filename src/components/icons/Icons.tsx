@@ -1,7 +1,6 @@
 import {
   IconVideo,
   IconMicrophone2,
-  IconArrowRight,
   IconVideoOff,
   IconVector,
   IconVectorOff,
@@ -12,7 +11,22 @@ import {
   IconDeviceTv,
   IconBrandVlc,
   IconAppWindow,
-  IconCast
+  IconCast,
+  IconMenuDeep,
+  IconMenu2,
+  IconLogout2,
+  IconBuildingFactory2,
+  IconListDetails,
+  IconUserCircle,
+  IconLock,
+  IconLockOpen,
+  IconPlugConnected,
+  IconPlugConnectedX,
+  IconRefresh,
+  IconAlertTriangle,
+  IconAlertOctagon,
+  IconPencil,
+  IconPlus
 } from '@tabler/icons-react';
 
 interface IClassName {
@@ -36,9 +50,6 @@ const pickIcon = {
   IconVectorOff: ({ className }: IClassName) => (
     <IconVectorOff className={className} />
   ),
-  IconArrowRight: ({ className }: IClassName) => (
-    <IconArrowRight className={className} />
-  ),
   IconCopy: ({ className }: IClassName) => <IconCopy className={className} />,
   IconCopyOff: ({ className }: IClassName) => (
     <IconCopyOff className={className} />
@@ -55,11 +66,52 @@ const pickIcon = {
   IconAppWindow: ({ className }: IClassName) => (
     <IconAppWindow className={className} />
   ),
-  IconCast: ({ className }: IClassName) => <IconCast className={className} />
+  IconCast: ({ className }: IClassName) => <IconCast className={className} />,
+  IconMenuDeep: ({ className }: IClassName) => (
+    <IconMenuDeep className={className} />
+  ),
+  IconMenu2: ({ className }: IClassName) => <IconMenu2 className={className} />,
+  IconLogout2: ({ className }: IClassName) => (
+    <IconLogout2 className={className} />
+  ),
+  IconBuildingFactory2: ({ className }: IClassName) => (
+    <IconBuildingFactory2 className={className} />
+  ),
+  IconListDetails: ({ className }: IClassName) => (
+    <IconListDetails className={className} />
+  ),
+  IconUserCircle: ({ className }: IClassName) => (
+    <IconUserCircle className={className} />
+  ),
+  IconLock: ({ className }: IClassName) => <IconLock className={className} />,
+  IconLockOpen: ({ className }: IClassName) => (
+    <IconLockOpen className={className} />
+  ),
+  IconPlugConnected: ({ className }: IClassName) => (
+    <IconPlugConnected className={className} />
+  ),
+  IconPlugConnectedX: ({ className }: IClassName) => (
+    <IconPlugConnectedX className={className} />
+  ),
+  IconRefresh: ({ className }: IClassName) => (
+    <IconRefresh className={className} />
+  ),
+  IconAlertTriangle: ({ className }: IClassName) => (
+    <IconAlertTriangle className={className} />
+  ),
+  IconAlertOctagon: ({ className }: IClassName) => (
+    <IconAlertOctagon className={className} />
+  ),
+  IconPencil: ({ className }: IClassName) => (
+    <IconPencil className={className} />
+  ),
+  IconPlus: ({ className }: IClassName) => <IconPlus className={className} />
 };
 
+export type PickIconNames = keyof typeof pickIcon;
+
 interface IIcons {
-  name: keyof typeof pickIcon;
+  name: PickIconNames;
   className: string;
 }
 

@@ -2,20 +2,20 @@ import { useState } from 'react';
 import { SourceWithId } from '../../interfaces/Source';
 import { CallbackHook } from '../types';
 import { Log } from '../../api/logger';
+import { API_SECRET_KEY } from '../../utils/constants';
 
 export function useSetSourceToPurge(): CallbackHook<
   (source: SourceWithId) => void
 > {
   const [reloadList, setReloadList] = useState(false);
 
-  const removeInventorySource = (source: SourceWithId) => {
+  const purgeInventorySource = (source: SourceWithId) => {
     if (source && source.status === 'gone') {
       setReloadList(false);
 
       fetch(`/api/manager/inventory/${source._id}`, {
         method: 'PUT',
-        // TODO: Implement api key
-        headers: [['x-api-key', `Bearer apisecretkey`]]
+        headers: [['x-api-key', `Bearer ${API_SECRET_KEY}`]]
       })
         .then((response) => {
           if (!response.ok) {
@@ -40,5 +40,5 @@ export function useSetSourceToPurge(): CallbackHook<
       setReloadList(false);
     }
   };
-  return [removeInventorySource, reloadList];
+  return [purgeInventorySource, reloadList];
 }

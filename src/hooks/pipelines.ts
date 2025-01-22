@@ -2,14 +2,16 @@ import { useCallback, useEffect, useState } from 'react';
 import { DataHook } from './types';
 import { ResourcesCompactPipelineResponse } from '../../types/ateliere-live';
 import { ManagerPipelineResponse } from '../interfaces/pipeline';
+import { API_SECRET_KEY } from '../utils/constants';
 
 const ONE_MINUTE = 1000 * 60;
+
+type ModifiedDataHook<DataType> = [DataType | undefined, boolean];
 
 async function getPipeline(id: string): Promise<ManagerPipelineResponse> {
   return fetch(`/api/manager/pipelines/${id}`, {
     method: 'GET',
-    // TODO: Implement api key
-    headers: [['x-api-key', `Bearer apisecretkey`]]
+    headers: [['x-api-key', `Bearer ${API_SECRET_KEY}`]]
   }).then(async (response) => {
     if (response.ok) {
       return response.json();
@@ -64,8 +66,7 @@ export function usePipelines(): [
     setLoading(true);
     fetch('/api/manager/pipelines', {
       method: 'GET',
-      // TODO: Implement api key
-      headers: [['x-api-key', `Bearer apisecretkey`]]
+      headers: [['x-api-key', `Bearer ${API_SECRET_KEY}`]]
     })
       .then(async (response) => {
         if (response.ok) {
@@ -85,4 +86,30 @@ export function usePipelines(): [
     undefined,
     refresh
   ];
+}
+
+export function GetPipelines(): [
+  ...ModifiedDataHook<ResourcesCompactPipelineResponse[]>
+] {
+  const [loading, setLoading] = useState(true);
+  const [pipelines, setPipelines] = useState<
+    ResourcesCompactPipelineResponse[]
+  >([]);
+  useEffect(() => {
+    setLoading(true);
+    fetch('/api/manager/pipelines', {
+      method: 'GET',
+      headers: [['x-api-key', `Bearer ${API_SECRET_KEY}`]]
+    })
+      .then(async (response) => {
+        if (response.ok) {
+          setPipelines((await response.json()).pipelines);
+        }
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, []);
+
+  return [pipelines.sort((a, b) => a.name.localeCompare(b.name)), loading];
 }

@@ -19,9 +19,9 @@ import { Loader } from '../loader/Loader';
 import toast from 'react-hot-toast';
 import { refresh } from '../../utils/refresh';
 import { StopModal } from '../modal/StopModal';
-import { useState } from 'react';
-import { useDeleteMonitoring } from '../../hooks/monitoring';
+import { useContext, useState } from 'react';
 import { StartModal } from '../modal/StartModal';
+import { GlobalContext } from '../../contexts/GlobalContext';
 
 type ProductionListItemProps = {
   production: Production;
@@ -34,10 +34,11 @@ export function ProductionsListItem({ production }: ProductionListItemProps) {
     useState<StartProductionStatus>();
   const [stopProductionStatus, setStopProductionStatus] =
     useState<StopProductionStatus>();
-  const [deleteMonitoring] = useDeleteMonitoring();
   const [stopModalOpen, setStopModalOpen] = useState(false);
   const [startErrorModalOpen, setStartErrorModalOpen] = useState(false);
   const putProduction = usePutProduction();
+  const { locked } = useContext(GlobalContext);
+
   const handleStopProduction = async () => {
     stopProduction(production)
       .then((status) => {
@@ -147,10 +148,16 @@ export function ProductionsListItem({ production }: ProductionListItemProps) {
           <div
             onClick={() => handleStartStopButtonClick()}
             className={`${
-              production.isActive
-                ? 'bg-button-delete hover:bg-button-hover-red-bg'
+              locked
+                ? 'pointer-events-none bg-brand/50 text-p/50'
+                : 'pointer-events-auto'
+            } ${
+              production.isActive && !locked
+                ? 'bg-button-delete hover:bg-button-hover-red-bg pointer-events-none'
                 : 'bg-brand hover:bg-button-hover-bg'
-            } p-2 rounded cursor-pointer`}
+            } 
+            ${locked && production.isActive && 'bg-button-delete/50'}
+            p-2 rounded cursor-pointer`}
           >
             {(loading || loadingStartProduction) && !startErrorModalOpen ? (
               <Loader className="w-6 h-6" />
@@ -183,6 +190,7 @@ export function ProductionsListItem({ production }: ProductionListItemProps) {
           isActive={production.isActive}
           id={production._id.toString()}
           name={production.name}
+          locked={locked}
         />
       </div>
     </li>

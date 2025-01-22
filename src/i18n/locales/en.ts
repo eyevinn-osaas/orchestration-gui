@@ -35,7 +35,7 @@ export const en = {
     disconnect_connections: 'Disconnect connections',
     remove_pipeline_streams: 'Remove streams',
     remove_pipeline_multiviews: 'Remove multiviews',
-    unexpected: 'Enexpeted error'
+    unexpected: 'Unexpected error'
   },
   source: {
     type: 'Type: {{type}}',
@@ -46,7 +46,8 @@ export const en = {
     orig: 'Original Name: {{name}}',
     metadata: 'Source Metadata',
     location_unknown: 'Unknown',
-    last_connected: 'Last connection'
+    last_connected: 'Last connection',
+    input_slot: 'Input slot: {{input_slot}}'
   },
   delete_source_status: {
     delete_stream: 'Delete stream',
@@ -58,19 +59,65 @@ export const en = {
     update_multiview: 'Update multiview',
     unexpected: 'Unexpected error'
   },
+  rendering_engine: {
+    media: {
+      create: {
+        create_media: 'Create media',
+        filename: 'Filename',
+        create: 'Create',
+        filename_error: 'Enter a filename',
+        abort: 'Cancel'
+      },
+      delete: {
+        delete_media: 'Delete media',
+        delete: 'Delete'
+      }
+    },
+    html: {
+      create: {
+        create_html: 'Create HTML',
+        width: 'HTML graphics width',
+        height: 'HTML graphics height',
+        url: 'URL to load',
+        create: 'Create',
+        width_error: 'Width must be between 20 and 8192',
+        height_error: 'Height must be between 20 and 8192',
+        url_error: 'Enter a URL',
+        abort: 'Cancel'
+      }
+    }
+  },
   empty_slot: {
     input_slot: 'Input slot'
   },
   production_configuration: 'Production Configuration',
   production: {
-    add_source: 'Add Source',
+    productions: 'Productions',
+    add_source: 'Add ingested',
     select_preset: 'Select Preset',
     clear_selection: 'Clear Selection',
     started: 'Production started: {{name}}',
     failed: 'Production start failed: {{name}}',
     stopped: 'Production stopped: {{name}}',
     stop_failed: 'Production stop failed: {{name}}',
-    missing_multiview: 'Missing multiview reference in selected preset'
+    missing_multiview: 'Missing multiview reference in selected preset',
+    source: 'Source',
+    add: 'Add',
+    add_other_source_type: 'Add other source type',
+    configure_outputs: 'Configure Outputs',
+    manage_multiviewers: 'Manage multiviewers'
+  },
+  configure_alignment_latency: {
+    configure_alignment_latency:
+      'Configure alignment and latency for the pipeline streams',
+    source_name: 'Source name',
+    error: 'The alignment value must be higher than the latency',
+    save: 'Save',
+    cancel: 'Cancel',
+    restart_stream_info:
+      'Do you wish to restart the streams you have changed latency for right away? Otherwise you will need to stop and start your production to apply your changes.',
+    no: 'No',
+    restart_stream: 'Restart stream'
   },
   create_new: 'Create New',
   default_prod_placeholder: 'My New Configuration',
@@ -503,23 +550,48 @@ export const en = {
       }
     }
   },
-  inventory: 'Inventory Management',
+  inventory: 'Inventory',
   inventory_list: {
+    refresh_inventory: 'Refresh inventory',
     search: 'Search',
     filter: 'Filter on {{type}}',
     types: 'Type',
     locations: 'Location',
     active_sources: 'Active Sources',
-    add: 'Add',
-    edit: 'Edit',
     sort_by: 'Sort by',
     no_sorting_applied: 'No sorting selected',
-    most_recent_connection: 'Most recent connection'
+    most_recent_connection: 'Most recent connection',
+    create_srt: 'Create SRT',
+    create_srt_source: 'Create SRT source',
+    srt_metadata: 'SRT Metadata',
+    local_ip: 'Local IP',
+    local_port: 'Local port',
+    remote_ip: 'Remote IP',
+    remote_port: 'Remote port',
+    latency: 'Latency (ms)',
+    name: 'Name',
+    passphrase: 'Passphrase',
+    ingest_uuid: 'Ingest',
+    select_ingest: 'Select an ingest',
+    no_ingest_selected: 'You need to select ingest',
+    no_name: 'You need to enter a name',
+    no_local_ip: 'You need to enter a local IP',
+    no_local_port: 'You need to enter a local port',
+    no_remote_ip: 'You need to enter a remote IP',
+    no_remote_port: 'You need to enter a remote port',
+    port_already_in_use_error:
+      'There is already a SRT source with this port. Choose a different port.',
+    passphrase_error: 'The passphrase needs to be between 10 and 79 characters',
+    generic_error: 'There was an error creating the SRT source',
+    duplicate_name_error:
+      'There is already an SRT source with this name on this ingest',
+    cancel: 'Cancel'
   },
   clear: 'Clear',
   apply: 'Apply',
   save: 'Save',
   saved: 'Saved!',
+  missing: 'Missing',
   name: 'Name',
   location: 'Location',
   type: 'Type',
@@ -584,12 +656,37 @@ export const en = {
   },
   online: 'ONLINE',
   offline: 'OFFLINE',
+  refresh_images: 'Refresh Thumbnails',
+  connections: 'Connections',
   server_error: 'No connection with {{string}}',
   system_controller: 'System controller',
   database: 'Database',
   application: 'Application',
   multiview: 'Multiview',
   setting_up: 'Setting up connections to external API:s...',
+  teardown: {
+    name: 'Teardown',
+    warning: 'WARNING!',
+    tearing_down: 'Tearing down...',
+    results: 'Teardown results',
+    are_you_sure: 'Are you sure?',
+    description: 'You are about to:',
+    optional: 'Optional:',
+    reset_pipelines: 'Reset all pipelines',
+    pipeline_output_streams: 'Delete all pipeline output streams',
+    pipeline_multiviewers: 'Delete all pipeline multiviewer outputs',
+    pipeline_streams: 'Delete all pipeline streams',
+    pipeline_control_connections: 'Delete all pipeline control connections',
+    ingest_streams: 'Delete all ingest streams',
+    ingest_src_sources: 'Delete all ingest SRT sources',
+    teardown_check: 'Verify'
+  },
+  lock: {
+    locked: 'Locked',
+    unlocked: 'Unlocked',
+    lock: 'Lock',
+    unlock: 'Unlock'
+  },
   preset: {
     preset_necessary: 'Preset must be selected!',
     low_delay: 'Low Delay Pipeline',
@@ -598,6 +695,7 @@ export const en = {
     port: 'Port',
     mode: 'Mode',
     srt_passphrase: 'Passphrase',
+    srt_stream_id: 'SRT ID',
     video_settings: 'Video settings',
     video_format: 'Format',
     video_bit_depth: 'Bit depth',
@@ -605,10 +703,33 @@ export const en = {
     add_stream: 'Add stream',
     stream_name: 'Stream',
     multiview_output_settings: 'Multiview output',
+    select_multiview_layout: 'Layout',
+    configure_layouts: 'Configure layouts',
+    create_layout: 'Create new layout',
+    update_layout: 'Update layout',
+    no_updated_layout: 'No layout updated',
+    layout_name_missing: 'Layout name is missing',
+    no_ip_selected: 'IP-adress is missing',
+    no_rate_selected: 'Kilobit rate is missing',
+    muliview_view: 'Input',
+    select_option: 'Select',
     select_multiview_preset: 'Preset',
+    new_preset_name: 'My layout',
     no_multiview_selected: 'No multiview selected',
     no_multiview_found: 'No multiview found',
-    no_port_selected: 'Unique port needed'
+    no_port_selected: 'Unique port needed',
+    unique_stream_id: 'Unique stream ID needed',
+    layout_already_exist:
+      'Layout {{layoutNameAlreadyExist}} will be replaced on save',
+    remove_multiview: 'Remove multiview',
+    remove_layout: 'Remove layout',
+    clear_layout: 'Clear layout',
+    add_another_multiview: 'Add another multiview',
+    could_not_delete_layout: 'Could not delete layout',
+    layout_deleted: 'Layout deleted',
+    confirm_update_multiviewers:
+      'Are you sure you want to update multiviewers for the running production?',
+    confirm_update: 'Update multiviewers'
   },
   error: {
     missing_sources_in_db: 'Missing sources, please restart production.',

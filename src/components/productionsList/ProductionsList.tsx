@@ -1,21 +1,26 @@
-import React from 'react';
-import { getProductions } from '../../api/manager/productions';
+import React, { use } from 'react';
 import { ProductionsListItem } from './ProductionsListItem';
+import { getProductions } from '../../api/manager/productions';
 
-async function ProductionsList() {
-  const productions = (await getProductions())
-    .sort((a, b) => {
-      return a.isActive === b.isActive ? 0 : a.isActive ? -1 : 1;
-    })
-    .map((production) => ({ ...production, _id: production._id.toString() }));
+function ProductionsList() {
+  const productions = use(getProductions());
+
   return (
     <ul className="w-full">
-      {productions.map((production) => (
-        <ProductionsListItem
-          key={`${production._id}`}
-          production={production}
-        />
-      ))}
+      {productions
+        .sort((a, b) => {
+          return a.isActive === b.isActive ? 0 : a.isActive ? -1 : 1;
+        })
+        .map((production) => ({
+          ...production,
+          _id: production._id.toString()
+        }))
+        .map((production) => (
+          <ProductionsListItem
+            key={`${production._id}`}
+            production={production}
+          />
+        ))}
     </ul>
   );
 }

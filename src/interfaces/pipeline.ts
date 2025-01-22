@@ -9,6 +9,15 @@ export interface SrtOutput {
   url: string;
 }
 
+export interface PipelineSource {
+  ingest_source_name: string;
+  ingest_name: string;
+  settings: {
+    alignment_ms?: number;
+    max_network_latency_ms?: number;
+  };
+}
+
 export interface ManagerPipelineResponse {
   pipeline: ResourcesPipelineResponse;
   status: {
@@ -62,6 +71,7 @@ export interface PipelineSettings {
   audio_mapping: string;
   program_output_port: number; // deprecated but kept for backward compatibility
   program_output: ProgramOutput[];
+  outputs?: PipelineOutput[];
   multiviews?: MultiviewSettings[];
   interfaces: [
     {
@@ -70,7 +80,21 @@ export interface PipelineSettings {
       protocol: string;
     }
   ];
+  sources?: PipelineSource[];
 }
+
+export interface PipelineOutput {
+  uuid: string;
+  settings: PipelineOutputEncoderSettings;
+  streams: PipelineOutputSettings[];
+}
+
+// In order for there to be multiple streams on the same output
+// all streams need to share encoder settings
+export type PipelineOutputEncoderSettings = Pick<
+  PipelineOutputSettings,
+  'video_format' | 'video_bit_depth' | 'video_kilobit_rate'
+>;
 
 export interface PipelineOutputSettings {
   audio_format: string;
@@ -87,6 +111,7 @@ export interface PipelineOutputSettings {
   video_format: string;
   video_gop_length: number;
   video_kilobit_rate: number;
+  srt_stream_id: string;
 }
 
 export interface PipelineStreamSettings {

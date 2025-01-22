@@ -1,61 +1,52 @@
-import Image from 'next/image';
 import { getSourceThumbnail } from '../../../utils/source';
-import { useMemo, useState } from 'react';
 import EditViewContext from '../EditViewContext';
 import GeneralSettings from './GeneralSettings';
 import { SourceWithId } from '../../../interfaces/Source';
 import UpdateButtons from './UpdateButtons';
 import AudioChannels from './AudioChannels/AudioChannels';
-import { IconExclamationCircle } from '@tabler/icons-react';
+import ImageComponent from '../../image/ImageComponent';
+import { useState } from 'react';
 
 export default function EditView({
   source,
   updateSource,
   close,
-  removeInventorySource
+  purgeInventorySource,
+  removeInventorySourceItem,
+  locked
 }: {
   source: SourceWithId;
   updateSource: (source: SourceWithId) => void;
   close: () => void;
-  removeInventorySource: (source: SourceWithId) => void;
+  purgeInventorySource: (source: SourceWithId) => void;
+  removeInventorySourceItem: (id: string) => Promise<Response | undefined>;
+  locked: boolean;
 }) {
-  const [loaded, setLoaded] = useState(false);
-  const src = useMemo(() => getSourceThumbnail(source), [source]);
+  const [duplicateAudioValues, setDuplicateAudioValues] = useState(false);
 
   return (
     <EditViewContext source={source} updateSource={updateSource}>
-      <div className="flex flex-row">
-        {source.status === 'gone' ? (
-          <div className="w-96 h-96 flex justify-center items-center p-5">
-            <IconExclamationCircle className="text-error w-full h-full" />
-          </div>
-        ) : (
-          <Image
-            className={`transition-opacity opacity-0 w-full max-w-lg mb-5 lg:mb-0 ${
-              loaded ? 'opacity-100' : ''
-            }`}
-            alt="Preview Thumbnail"
-            src={src}
-            onLoadingComplete={() => setLoaded(true)}
-            placeholder="empty"
-            width={300}
-            height={0}
-            style={{
-              objectFit: 'contain'
-            }}
-          />
-        )}
-
-        <GeneralSettings />
+      <div className="flex flex-row mb-10">
+        <div className="relative w-[34rem]">
+          <ImageComponent src={getSourceThumbnail(source)} />
+        </div>
+        <GeneralSettings locked={locked} />
       </div>
 
-      <div className="flex-auto">
-        <AudioChannels source={source} />
+      <div className="flex">
+        <AudioChannels
+          source={source}
+          locked={locked}
+          setDuplicateAudioValues={setDuplicateAudioValues}
+        />
       </div>
       <UpdateButtons
-        close={close}
-        removeInventorySource={removeInventorySource}
         source={source}
+        close={close}
+        purgeInventorySource={purgeInventorySource}
+        removeInventorySourceItem={removeInventorySourceItem}
+        locked={locked}
+        duplicateAudioValues={duplicateAudioValues}
       />
     </EditViewContext>
   );

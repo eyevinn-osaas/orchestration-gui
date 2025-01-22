@@ -64,13 +64,12 @@ export async function createMultiviewForPipeline(
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     productionSettings.pipelines[multiviewIndex].pipeline_id!;
   const sources = await getSourcesByIds(
-    sourceRefs.map((ref) => ref._id.toString())
+    sourceRefs.map((ref) => (ref._id ? ref._id.toString() : ''))
   );
   const sourceRefsWithLabels = sourceRefs.map((ref) => {
+    const refId = ref._id ? ref._id.toString() : '';
     if (!ref.label) {
-      const source = sources.find(
-        (source) => source._id.toString() === ref._id.toString()
-      );
+      const source = sources.find((source) => source._id.toString() === refId);
       ref.label = source?.name || '';
     }
     return ref;
@@ -120,6 +119,7 @@ export async function createMultiviewForPipeline(
             srt_mode: multiview.output.srt_mode,
             srt_latency_ms: multiview.output.srt_latency_ms,
             srt_passphrase: multiview.output.srt_passphrase,
+            srt_stream_id: multiview.output.srt_stream_id,
             video_format: multiview.output.video_format,
             video_kilobit_rate: multiview.output.video_kilobit_rate
           }
@@ -143,8 +143,14 @@ export async function createMultiviewForPipeline(
       );
 
       if (response.ok) {
+        Log().info(
+          `Created multiview for pipeline '${pipelineUUID}' from preset`
+        );
         return await response.json();
       }
+      Log().info(
+        `ERROR: Could not create multiview for pipeline '${pipelineUUID}' from preset`
+      );
       throw await response.text();
     }
   );
@@ -174,8 +180,14 @@ export async function deleteMultiviewFromPipeline(
   );
 
   if (response.ok) {
+    Log().info(
+      `Deleted multiview ${multiviewId} for pipeline '${pipelineUUID}' from preset`
+    );
     return;
   }
+  Log().info(
+    `ERROR: Could not delete multiview ${multiviewId} for pipeline '${pipelineUUID}' from preset`
+  );
   throw await response.text();
 }
 
@@ -217,7 +229,13 @@ export async function updateMultiviewForPipeline(
     }
   );
   if (response.ok) {
+    Log().info(
+      `Updated multiview ${multiviewId} for pipeline '${pipelineUUID}' from preset`
+    );
     return await response.json();
   }
+  Log().info(
+    `ERROR: Could not update multiview ${multiviewId} for pipeline '${pipelineUUID}' from preset`
+  );
   throw await response.text();
 }

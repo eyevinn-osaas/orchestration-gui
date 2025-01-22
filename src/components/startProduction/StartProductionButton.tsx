@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useState, useRef } from 'react';
+import { useCallback, useState, useRef, useEffect } from 'react';
 import { StartModal } from '../modal/StartModal';
 import { Button } from '../button/Button';
 import {
@@ -16,7 +16,8 @@ import { StopModal } from '../modal/StopModal';
 import { usePutProduction } from '../../hooks/productions';
 import toast from 'react-hot-toast';
 import { useDeleteMonitoring } from '../../hooks/monitoring';
-import { useMultiviewPresets } from '../../hooks/multiviewPreset';
+import { useMultiviewLayouts } from '../../hooks/multiviewLayout';
+import { useUpdateSourceInputSlotOnMultiviewLayouts } from '../../hooks/useUpdateSourceInputSlotOnMultiviewLayouts';
 
 type StartProductionButtonProps = {
   production: Production | undefined;
@@ -39,9 +40,24 @@ export function StartProductionButton({
   const putProduction = usePutProduction();
   const [stopProduction, loadingStopProduction] = useStopProduction();
   const [deleteMonitoring] = useDeleteMonitoring();
+  const [updateSourceInputSlotOnMultiviewLayouts, updateLoading] =
+    useUpdateSourceInputSlotOnMultiviewLayouts();
   const [modalOpen, setModalOpen] = useState(false);
   const [stopModalOpen, setStopModalOpen] = useState(false);
-  const [multiviewPresets] = useMultiviewPresets();
+  const [multiviewLayouts] = useMultiviewLayouts(true);
+  const [productionSetup, setProductionSetup] = useState<Production>();
+
+  useEffect(() => {
+    if (production && modalOpen) {
+      updateSourceInputSlotOnMultiviewLayouts(production).then(
+        (updatedSetup) => {
+          if (!updatedSetup) return;
+          setProductionSetup(updatedSetup);
+          refreshProduction();
+        }
+      );
+    }
+  }, [modalOpen]);
 
   const onClick = () => {
     if (!production) return;
@@ -80,50 +96,58 @@ export function StartProductionButton({
     setStartProductionStatus(undefined);
     clearTimeout(timeout.current);
   }, []);
+
   const onConfirm = useCallback(() => {
-    if (!production) {
+    if (!productionSetup) {
       return;
     }
     let productionToStart: Production;
-    if (!production.production_settings.pipelines[0].multiviews) {
-      if (!multiviewPresets || multiviewPresets.length === 0) {
+    if (!productionSetup.production_settings.pipelines[0].multiviews) {
+      if (!multiviewLayouts || multiviewLayouts.length === 0) {
         toast.error(t('start_production_status.unexpected'));
         return;
       }
       const pipelineToUpdateMultiview =
-        production.production_settings.pipelines[0];
+        productionSetup.production_settings.pipelines[0];
       productionToStart = {
-        ...production,
-        sources: production.sources.map((source, i) => ({
+        ...productionSetup,
+        sources: productionSetup.sources.map((source, i) => ({
           ...source,
           input_slot: i + 1
         })),
         production_settings: {
-          ...production.production_settings,
+          ...productionSetup.production_settings,
           pipelines: [
-            ...production.production_settings.pipelines.filter(
+            ...productionSetup.production_settings.pipelines.filter(
               (p) => p.pipeline_name !== pipelineToUpdateMultiview.pipeline_name
             ),
             {
               ...pipelineToUpdateMultiview,
-              multiviews: [{ ...multiviewPresets[0], for_pipeline_idx: 0 }]
+              multiviews: [
+                {
+                  ...multiviewLayouts[0],
+                  for_pipeline_idx: 0,
+                  _id: multiviewLayouts[0]._id?.toString()
+                }
+              ]
             }
           ]
         }
       };
     } else {
       productionToStart = {
-        ...production,
-        sources: production.sources.map((source, i) => ({
+        ...productionSetup,
+        sources: productionSetup.sources.map((source, i) => ({
           ...source,
           input_slot: i + 1
         }))
       };
     }
+
     startProduction(productionToStart)
       .then((status) => {
         if (status.ok) {
-          console.log(`Starting production '${production.name}'`);
+          console.log(`Starting production '${productionSetup.name}'`);
           refreshProduction();
           refresh('/');
           setModalOpen(false);
@@ -146,7 +170,7 @@ export function StartProductionButton({
           steps: [{ step: 'start', success: false }]
         });
       });
-  }, [startProduction, production]);
+  }, [startProduction, productionSetup]);
 
   const onStopConfirm = async () => {
     if (!production) return;
@@ -194,8 +218,13 @@ export function StartProductionButton({
     return (
       <>
         <Button
-          className="bg-button-delete hover:bg-button-hover-red-bg"
+          className={`${
+            disabled
+              ? 'bg-button-delete/50 pointer-events-none'
+              : 'bg-button-delete hover:bg-button-hover-red-bg'
+          }`}
           onClick={() => setStopModalOpen(true)}
+          disabled={disabled}
         >
           {loading ? (
             <Loader className="w-14 h-6" />
@@ -221,16 +250,20 @@ export function StartProductionButton({
         onClick={onClick}
         disabled={disabled}
         hoverMessage={disabled ? 'Preset must be selected!' : ''}
-        className={'min-w-fit hover:bg-button-hover-bg'}
+        className={`${
+          disabled
+            ? 'bg-button-bg/50 pointer-events-none'
+            : 'hover:bg-button-hover-bg'
+        } min-w-fit`}
       >
         {loading ? <Loader className="w-10 h-5" /> : t('workflow.start')}
       </Button>
       <StartModal
-        name={production?.name || ''}
+        name={productionSetup?.name || ''}
         onAbort={onAbort}
         onConfirm={onConfirm}
         open={modalOpen}
-        loading={loading}
+        loading={loading || updateLoading}
         startStatus={startProductionStatus}
       />
     </>

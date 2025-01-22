@@ -11,9 +11,15 @@ import { channel, mapAudio } from '../../../../utils/audioMapping';
 
 interface IAudioChannels {
   source: Source;
+  locked: boolean;
+  setDuplicateAudioValues: (values: boolean) => void;
 }
 
-export default function AudioChannels({ source }: IAudioChannels) {
+export default function AudioChannels({
+  source,
+  locked,
+  setDuplicateAudioValues
+}: IAudioChannels) {
   type TOutputs = 'audio_mapping.outL' | 'audio_mapping.outR';
   const t = useTranslate();
   const outputs: TOutputs[] = ['audio_mapping.outL', 'audio_mapping.outR'];
@@ -24,6 +30,7 @@ export default function AudioChannels({ source }: IAudioChannels) {
   } = useContext(EditViewContext);
 
   const [error, setError] = useState('');
+  const [duplicateError, setDuplicateError] = useState('');
   const [outputRows, setRows] = useState<{ id: string; value: string }[][]>([]);
 
   const { number_of_channels: numberOfChannels = 0 } = audioStream || {};
@@ -32,6 +39,22 @@ export default function AudioChannels({ source }: IAudioChannels) {
   for (let i = 1; i <= numberOfChannels; i++) {
     channelsInArray.push(i);
   }
+
+  useEffect(() => {
+    const isDuplicate = outputRows.some((row, rowIndex) =>
+      row.some((cell, cellIndex) =>
+        outputRows.some((innerRow, innerRowIndex) =>
+          innerRow.some((innerCell, innerCellIndex) =>
+            rowIndex !== innerRowIndex || cellIndex !== innerCellIndex
+              ? cell.value === innerCell.value && cell.value !== ''
+              : false
+          )
+        )
+      )
+    );
+
+    setDuplicateAudioValues(isDuplicate);
+  }, [outputRows, setDuplicateAudioValues]);
 
   useEffect(() => {
     let array = [channelsInArray.map(() => channel(''))];
@@ -188,9 +211,11 @@ export default function AudioChannels({ source }: IAudioChannels) {
     });
 
     if (isAlreadyUsed) {
-      return setError(() =>
+      setDuplicateError(() =>
         t('audio_mapping.alreadyUsed', { value: e.target.value })
       );
+    } else {
+      setDuplicateError('');
     }
 
     if (Number(e.target.value) > max) {
@@ -227,9 +252,11 @@ export default function AudioChannels({ source }: IAudioChannels) {
             rowIndex={rowIndex}
             max={max}
             updateRows={updateRows}
+            locked={locked}
           />
         </div>
       ))}
+      <Error error={duplicateError} />
       <Error error={error} />
     </div>
   );

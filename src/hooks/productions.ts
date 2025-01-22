@@ -1,17 +1,16 @@
 import { ObjectId } from 'mongodb';
 import { Production } from '../interfaces/production';
+import { API_SECRET_KEY } from '../utils/constants';
 
 export function usePostProduction() {
   return async (name: string): Promise<ObjectId> => {
     const response = await fetch('/api/manager/productions', {
       method: 'POST',
-      // TODO: Implement api key
-      headers: [['x-api-key', `Bearer apisecretkey`]],
+      headers: [['x-api-key', `Bearer ${API_SECRET_KEY}`]],
       body: JSON.stringify({
         isActive: false,
         name,
-        sources: [],
-        selectedPresetRef: undefined
+        sources: []
       })
     });
     if (response.ok) {
@@ -25,8 +24,7 @@ export function useGetProduction() {
   return async (id: string): Promise<Production> => {
     const response = await fetch(`/api/manager/productions/${id}`, {
       method: 'GET',
-      // TODO: Implement api key
-      headers: [['x-api-key', `Bearer apisecretkey`]]
+      headers: [['x-api-key', `Bearer ${API_SECRET_KEY}`]]
     });
     if (response.ok) {
       return response.json();
@@ -36,15 +34,14 @@ export function useGetProduction() {
 }
 
 export function usePutProduction() {
-  return async (id: string, production: Production): Promise<void> => {
+  return async (id: string, production: Production): Promise<Production> => {
     const response = await fetch(`/api/manager/productions/${id}`, {
       method: 'PUT',
-      // TODO: Implement api key
-      headers: [['x-api-key', `Bearer apisecretkey`]],
+      headers: [['x-api-key', `Bearer ${API_SECRET_KEY}`]],
       body: JSON.stringify(production)
     });
     if (response.ok) {
-      return;
+      return response.json();
     }
     throw await response.text();
   };
@@ -54,9 +51,86 @@ export function useDeleteProduction() {
   return async (id: string): Promise<void> => {
     const response = await fetch(`/api/manager/productions/${id}`, {
       method: 'DELETE',
-      // TODO: Implement api key
-      headers: [['x-api-key', `Bearer apisecretkey`]]
+      headers: [['x-api-key', `Bearer ${API_SECRET_KEY}`]]
     });
+    if (response.ok) {
+      return;
+    }
+    throw await response.text();
+  };
+}
+
+export function useGetProductionSourceAlignmentAndLatency() {
+  return async (
+    id: string,
+    pipelineId: string,
+    ingestName: string,
+    ingestSourceName: string
+  ): Promise<{ alignment: number; latency: number } | null> => {
+    const response = await fetch(
+      `/api/manager/productions/${id}/${pipelineId}/${ingestName}/${ingestSourceName}`,
+      {
+        method: 'GET',
+        headers: [['x-api-key', `Bearer ${API_SECRET_KEY}`]]
+      }
+    );
+    if (response.ok) {
+      const text = await response.text();
+      const data = text ? JSON.parse(text) : null;
+      return data ? { alignment: data.alignment, latency: data.latency } : null;
+    }
+
+    throw await response.text();
+  };
+}
+
+export function usePutProductionPipelineSourceAlignmentAndLatency() {
+  return async (
+    id: string,
+    pipelineId: string,
+    ingestName: string,
+    ingestSourceName: string,
+    alignment: number,
+    latency: number
+  ): Promise<void> => {
+    const response = await fetch(
+      `/api/manager/productions/${id}/${pipelineId}/${ingestName}/${ingestSourceName}`,
+      {
+        method: 'PUT',
+        headers: [['x-api-key', `Bearer ${API_SECRET_KEY}`]],
+        body: JSON.stringify({
+          alignment_ms: alignment,
+          max_network_latency_ms: latency
+        })
+      }
+    );
+
+    if (response.status === 204) {
+      return;
+    }
+
+    if (response.ok) {
+      return await response.json();
+    }
+
+    throw await response.text();
+  };
+}
+
+export function useReplaceProductionSourceStreamIds() {
+  return async (
+    id: string,
+    sourceId: string | ObjectId,
+    stream_uuids: string[]
+  ): Promise<void> => {
+    const response = await fetch(
+      `/api/manager/productions/${id}/sources/${sourceId}`,
+      {
+        method: 'PUT',
+        headers: [['x-api-key', `Bearer ${API_SECRET_KEY}`]],
+        body: JSON.stringify({ stream_uuids })
+      }
+    );
     if (response.ok) {
       return;
     }

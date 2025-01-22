@@ -1,10 +1,13 @@
 import {
   ResourcesCompactIngestResponse,
   ResourcesIngestResponse,
+  ResourcesIngestStreamResponse,
+  ResourcesSourceResponse,
   ResourcesThumbnailResponse
 } from '../../../types/ateliere-live';
 import { LIVE_BASE_API_PATH } from '../../constants';
 import { getAuthorizationHeader } from './utils/authheader';
+import { SrtSource } from '../../interfaces/Source';
 
 // TODO: create proper cache...
 const INGEST_UUID_CACHE: Map<string, string> = new Map();
@@ -14,19 +17,21 @@ export async function getUuidFromIngestName(
   ingestName: string,
   useCache = true
 ) {
-  const cache = INGEST_UUID_CACHE.get(ingestName);
-  if (cache && useCache) {
-    return cache;
-  }
-  const ingests = await getIngests();
-  const ingest = ingests.find((ingest) => ingest.name === ingestName);
+  if (ingestName !== undefined) {
+    const cache = INGEST_UUID_CACHE.get(ingestName);
+    if (cache && useCache) {
+      return cache;
+    }
+    const ingests = await getIngests();
+    const ingest = ingests.find((ingest) => ingest.name === ingestName);
 
-  if (ingest && ingest.uuid) {
+    if (!ingest) {
+      console.warn(`Could not find ingest ${ingestName}`);
+      throw 'get_uuid';
+    }
     INGEST_UUID_CACHE.set(ingestName, ingest.uuid);
     return ingest.uuid;
   }
-  console.warn(`Could not find UUID for ${ingestName}`);
-  throw 'get_uuid';
 }
 
 export async function getSourceIdFromSourceName(
@@ -34,26 +39,28 @@ export async function getSourceIdFromSourceName(
   sourceName: string,
   useCache = true
 ) {
-  let ingestCache = SOURCE_ID_CACHE.get(ingestUuid);
-  if (!ingestCache) {
-    ingestCache = new Map();
-    SOURCE_ID_CACHE.set(ingestUuid, ingestCache);
-  }
-  const cache = ingestCache?.get(sourceName);
-  if (cache && useCache) {
-    return cache;
-  }
-  const ingest = await getIngest(ingestUuid);
-  const source = ingest.sources?.find((source) => source.name === sourceName);
+  if (ingestUuid !== undefined && sourceName !== undefined) {
+    let ingestCache = SOURCE_ID_CACHE.get(ingestUuid);
+    if (!ingestCache) {
+      ingestCache = new Map();
+      SOURCE_ID_CACHE.set(ingestUuid, ingestCache);
+    }
+    const cache = ingestCache?.get(sourceName);
+    if (cache && useCache) {
+      return cache;
+    }
+    const ingest = await getIngest(ingestUuid);
+    const source = ingest.sources?.find((source) => source.name === sourceName);
 
-  if (source && source.source_id !== undefined) {
-    ingestCache.set(sourceName, source.source_id);
-    return source.source_id;
+    if (source && source.source_id !== undefined) {
+      ingestCache.set(sourceName, source.source_id);
+      return source.source_id;
+    }
+    console.warn(
+      `Could not find id for source ${sourceName} in ingest ${ingestUuid}`
+    );
+    throw `Could not find id for source ${sourceName} in ingest ${ingestUuid}`;
   }
-  console.warn(
-    `Could not find id for source ${sourceName} in ingest ${ingestUuid}`
-  );
-  throw `Could not find id for source ${sourceName} in ingest ${ingestUuid}`;
 }
 
 export async function getIngests(): Promise<ResourcesCompactIngestResponse[]> {
@@ -106,6 +113,7 @@ export async function getSourceThumbnail(
       process.env.LIVE_URL
     ),
     {
+      next: { tags: ['image'] },
       method: 'POST',
       body: JSON.stringify({
         encoder: 'auto',
@@ -114,7 +122,8 @@ export async function getSourceThumbnail(
         width
       }),
       headers: {
-        authorization: getAuthorizationHeader()
+        authorization: getAuthorizationHeader(),
+        cache: 'no-store'
       }
     }
   );
@@ -143,6 +152,95 @@ export async function deleteSrtSource(ingestUuid: string, sourceId: number) {
   );
   if (response.ok) {
     return response.status;
+  }
+  throw await response.text();
+}
+
+export async function createSrtSource(
+  ingestUuid: string,
+  srtPayload: SrtSource
+) {
+  let payload;
+
+  // Making sure remote_port is only passed if mode is 'caller'
+  if (srtPayload.mode === 'caller') {
+    payload = {
+      srt_source: {
+        ...srtPayload,
+        local_port: Number(srtPayload.local_port),
+        latency_ms: Number(srtPayload.latency_ms),
+        remote_port: Number(srtPayload.remote_port)
+      }
+    };
+  } else {
+    payload = {
+      srt_source: {
+        ...srtPayload,
+        local_port: Number(srtPayload.local_port),
+        latency_ms: Number(srtPayload.latency_ms)
+      }
+    };
+  }
+
+  const response = await fetch(
+    new URL(
+      LIVE_BASE_API_PATH + `/ingests/${ingestUuid}/sources`,
+      process.env.LIVE_URL
+    ),
+    {
+      method: 'POST',
+      body: JSON.stringify(payload),
+      headers: {
+        authorization: getAuthorizationHeader()
+      }
+    }
+  );
+  if (response.ok) {
+    return response.json();
+  }
+  const errorText = await response.text();
+  throw new Error(errorText);
+}
+
+export async function getIngestSources(
+  ingestUuid: string
+): Promise<ResourcesSourceResponse[]> {
+  const response = await fetch(
+    new URL(
+      LIVE_BASE_API_PATH + `/ingests/${ingestUuid}/sources?expand=true`,
+      process.env.LIVE_URL
+    ),
+    {
+      method: 'GET',
+      headers: {
+        authorization: getAuthorizationHeader()
+      }
+    }
+  );
+  if (response.ok) {
+    return response.json();
+  }
+  const errorText = await response.text();
+  throw new Error(errorText);
+}
+
+export async function getIngestStreams(
+  ingestUuid: string
+): Promise<ResourcesIngestStreamResponse[]> {
+  const response = await fetch(
+    new URL(
+      LIVE_BASE_API_PATH + `/ingests/${ingestUuid}/streams?expand=true`,
+      process.env.LIVE_URL
+    ),
+    {
+      method: 'GET',
+      headers: {
+        authorization: getAuthorizationHeader()
+      }
+    }
+  );
+  if (response.ok) {
+    return response.json();
   }
   throw await response.text();
 }

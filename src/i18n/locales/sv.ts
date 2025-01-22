@@ -48,7 +48,8 @@ export const sv = {
     orig: 'Enhetsnamn: {{name}}',
     metadata: 'Käll-metadata',
     location_unknown: 'Okänd',
-    last_connected: 'Senast uppkoppling'
+    last_connected: 'Senast uppkoppling',
+    input_slot: 'Ingång: {{input_slot}}'
   },
   delete_source_status: {
     delete_stream: 'Radera ström',
@@ -60,19 +61,65 @@ export const sv = {
     update_multiview: 'Uppdatera multiview',
     unexpected: 'Oväntat fel'
   },
+  rendering_engine: {
+    media: {
+      create: {
+        create_media: 'Skapa media',
+        filename: 'Filnamn',
+        create: 'Skapa',
+        filename_error: 'Ange ett filnamn',
+        abort: 'Avbryt'
+      },
+      delete: {
+        delete_media: 'Ta bort media',
+        delete: 'Ta bort'
+      }
+    },
+    html: {
+      create: {
+        create_html: 'Skapa HTML',
+        width: 'Bredd på grafik',
+        height: 'Höjd på grafik',
+        url: 'URL att ladda in',
+        create: 'Skapa',
+        width_error: 'Bredden måste vara mellan 20 och 8192',
+        height_error: 'Höjden måste vara mellan 20 och 8192',
+        url_error: 'Ange en URL',
+        abort: 'Avbryt'
+      }
+    }
+  },
   empty_slot: {
     input_slot: 'Ingång'
   },
   production_configuration: 'Produktionskonfiguration',
   production: {
-    add_source: 'Lägg till källa',
+    productions: 'Produktioner',
+    add_source: 'Lägg till ingång',
     select_preset: 'Välj produktionsmall',
     clear_selection: 'Rensa val',
     started: 'Produktion startad: {{name}}',
     failed: 'Start av produktion misslyckades: {{name}}',
     stopped: 'Produktion stoppad: {{name}}',
     stop_failed: 'Stopp av produktion misslyckades: {{name}}',
-    missing_multiview: 'Saknar referens till en multiview i valt preset'
+    missing_multiview: 'Saknar referens till en multiview i valt preset',
+    source: 'Källa',
+    add: 'Lägg till',
+    add_other_source_type: 'Lägg till annan källtyp',
+    configure_outputs: 'Konfigurera Outputs',
+    manage_multiviewers: 'Uppdatera multiviewers'
+  },
+  configure_alignment_latency: {
+    source_name: 'Källnamn',
+    error: 'Alignmentvärdet måste vara högre än latencyvärdet',
+    configure_alignment_latency:
+      'Ställ in alignment och latency för strömmarna på produktionens pipelines',
+    save: 'Spara',
+    cancel: 'Avbryt',
+    restart_stream_info:
+      'Vill du starta om strömmarna du ändrat latency för direkt? Annars behöver du stoppa och starta om produktionen för att få med dina ändringar.',
+    no: 'Nej',
+    restart_stream: 'Starta om strömmar'
   },
   create_new: 'Skapa ny',
   default_prod_placeholder: 'Min Nya Konfiguration',
@@ -507,21 +554,46 @@ export const sv = {
   },
   inventory: 'Källhantering',
   inventory_list: {
+    refresh_inventory: 'Uppdatera källor',
     search: 'Sök',
     filter: 'Filtrera på {{type}}',
     types: 'Typ',
     locations: 'Plats',
     active_sources: 'Aktiva källor',
-    add: 'Lägg till',
-    edit: 'Redigera',
     sort_by: 'Sortera på',
     no_sorting_applied: 'Ingen sortering vald',
-    most_recent_connection: 'Senast anslutning'
+    most_recent_connection: 'Senast anslutning',
+    create_srt: 'Skapa SRT',
+    create_srt_source: 'Skapa SRT källa',
+    srt_metadata: 'SRT Metadata',
+    local_ip: 'Lokal IP',
+    local_port: 'Lokal port',
+    remote_ip: 'Remote IP',
+    remote_port: 'Remote port',
+    latency: 'Latency (ms)',
+    name: 'Namn',
+    passphrase: 'Lösenord',
+    ingest_uuid: 'Ingest',
+    select_ingest: 'Välj ingest',
+    no_ingest_selected: 'Du behöver välja ingest',
+    no_name: 'Du behöver fylla i ett namn',
+    no_local_ip: 'Du behöver fylla i en lokal IP',
+    no_local_port: 'Du behöver fylla i en lokal port',
+    no_remote_ip: 'Du behöver fylla i en remote IP',
+    no_remote_port: 'Du behöver fylla i en remote port',
+    port_already_in_use_error:
+      'Den här porten används redan av en annan SRT källa. Välj en annan port.',
+    passphrase_error: 'Lösenordet måste vara mellan 10 och 79 tecken',
+    generic_error: 'Ett fel uppstod vid skapandet av SRT källan',
+    duplicate_name_error:
+      'Det finns redan en SRT med det här namnet på den här ingesten.',
+    cancel: 'Avbryt'
   },
   clear: 'Rensa',
   apply: 'Applicera',
   save: 'Spara',
   saved: 'Sparat!',
+  missing: 'Saknas',
   name: 'Namn',
   location: 'Plats',
   type: 'Typ',
@@ -540,7 +612,7 @@ export const sv = {
     outR: 'Ut H',
     maxError: 'Max värde är {{max}}',
     minError: 'Minsta värde är 1',
-    alreadyUsed: 'Värdet {{value}} är redan användt',
+    alreadyUsed: 'Värdet {{value}} är redan använt',
     emptyBetween: 'Du kan inte ha tomma kanaler mellan två nummer',
     title: 'Ljudmappning'
   },
@@ -587,12 +659,38 @@ export const sv = {
   },
   online: 'ONLINE',
   offline: 'OFFLINE',
+  refresh_images: 'Uppdatera Tumnaglar',
+  connections: 'Anslutningar',
   server_error: '{{string}}:n inte ansluten',
   system_controller: 'Systemkontroller',
   database: 'Databas',
   application: 'Program',
   multiview: 'Multiview',
   setting_up: 'Sätter upp anslutning till externa API:n...',
+  teardown: {
+    name: 'Rensa',
+    warning: 'VARNING!',
+    tearing_down: 'Rensar...',
+    results: 'Resultat',
+    are_you_sure: 'Är du säker?',
+    description: 'Du kommer att:',
+    optional: 'Valfritt:',
+    reset_pipelines: 'Återställa alla pipelines',
+    pipeline_output_streams: 'Stänga ner alla pipeline output strömmar',
+    pipeline_multiviewers: 'Stänga ner alla pipeline multiviewers',
+    pipeline_streams: 'Stänga ner alla pipeline strömmar',
+    pipeline_control_connections:
+      'Stänga ner alla pipeline control connections',
+    ingest_streams: 'Stänga ner alla ingest strömmar',
+    ingest_src_sources: 'Stänga ner alla ingest SRT källor',
+    teardown_check: 'Verifiering'
+  },
+  lock: {
+    locked: 'Låst',
+    unlocked: 'Olåst',
+    lock: 'Lås',
+    unlock: 'Lås Upp'
+  },
   preset: {
     preset_necessary: 'Preset must be selected!',
     low_delay: 'Low Delay Pipeline',
@@ -601,6 +699,7 @@ export const sv = {
     port: 'Port',
     mode: 'Läge',
     srt_passphrase: 'Lösenord',
+    srt_stream_id: 'SRT ID',
     video_settings: 'Videoinställningar',
     video_format: 'Format',
     video_bit_depth: 'Bit depth',
@@ -609,9 +708,32 @@ export const sv = {
     stream_name: 'Ström',
     multiview_output_settings: 'Multiview utgång',
     no_multiview_selected: 'Ingen multiview vald',
+    no_ip_selected: 'Ingen IP-adress vald',
+    no_rate_selected: 'Ingen kilobit rate vald',
     no_multiview_found: 'Hittade ingen multiview',
+    select_multiview_layout: 'Komposition',
+    configure_layouts: 'Justera kompositioner',
+    create_layout: 'Skapa komposition',
+    update_layout: 'Uppdatera komposition',
+    no_updated_layout: 'Ingen uppdaterad komposition',
+    layout_name_missing: 'Namn på komposition saknas',
+    new_preset_name: 'Min komposition',
+    muliview_view: 'Ingång',
+    select_option: 'Välj',
     select_multiview_preset: 'Förinställningar',
-    no_port_selected: 'Unik port krävs'
+    no_port_selected: 'Unik port krävs',
+    unique_stream_id: 'Unikt stream ID krävs',
+    layout_already_exist:
+      'Konfigurationen {{layoutNameAlreadyExist}} skrivs över om du sparar',
+    remove_multiview: 'Ta bort multiview',
+    remove_layout: 'Ta bort komposition',
+    clear_layout: 'Rensa komposition',
+    add_another_multiview: 'Lägg till ny multiview',
+    layout_deleted: 'Kompositionen har tagits bort',
+    could_not_delete_layout: 'Kunde inte ta bort kompositionen',
+    confirm_update_multiviewers:
+      'Är du säker på att du vill uppdatera multiview för pågående produktion?',
+    confirm_update: 'Uppdatera multiviewers'
   },
   error: {
     missing_sources_in_db: 'Källor saknas, var god starta om produktionen.',

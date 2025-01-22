@@ -5,6 +5,7 @@ import {
   getUuidFromIngestName
 } from '../../../../../../../api/ateliereLive/ingest';
 import { isAuthenticated } from '../../../../../../../api/manager/auth';
+import { Log } from '../../../../../../../api/logger';
 
 type Params = {
   ingest_name: string;
@@ -23,16 +24,22 @@ export async function GET(
 
   try {
     const ingestUuid = await getUuidFromIngestName(params.ingest_name);
-    const sourceId = await getSourceIdFromSourceName(
-      ingestUuid,
-      params.source_name
+    const sourceId = ingestUuid
+      ? await getSourceIdFromSourceName(ingestUuid, params.source_name)
+      : 0;
+    const base64Image = await getSourceThumbnail(
+      ingestUuid || '',
+      sourceId || 0
     );
-    const base64Image = await getSourceThumbnail(ingestUuid, sourceId);
     if (!base64Image) {
       return new NextResponse('image not found', { status: 404 });
     }
     return new NextResponse(Buffer.from(base64Image, 'base64'));
   } catch (e) {
+    Log().error(
+      `Error fetching thumbnail for '${params.source_name}' from ingest '${params.ingest_name}':`,
+      e
+    );
     return new NextResponse(e?.toString(), { status: 404 });
   }
 }

@@ -1,7 +1,5 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Source, SourceWithId } from '../../interfaces/Source';
-import { PreviewThumbnail } from './PreviewThumbnail';
-import { getSourceThumbnail } from '../../utils/source';
+import React, { useEffect, useState } from 'react';
+import { SourceWithId } from '../../interfaces/Source';
 import videoSettings from '../../utils/videoSettings';
 import { getHertz } from '../../utils/stream';
 import { useTranslate } from '../../i18n/useTranslate';
@@ -11,72 +9,33 @@ import Outputs from '../inventory/editView/AudioChannels/Outputs';
 import { mapAudio } from '../../utils/audioMapping';
 import { oneBased } from '../inventory/editView/AudioChannels/utils';
 import capitalize from '../../utils/capitalize';
+import { SourceListItemThumbnail } from './SourceListItemThumbnail';
 
 type SourceListItemProps = {
   source: SourceWithId;
-  action: (source: SourceWithId) => void;
-  edit?: boolean;
+  action?: (source: SourceWithId) => void;
+  actionText: string;
   disabled: unknown;
+  locked: boolean;
 };
 
-const getIcon = (source: Source) => {
-  const isGone = source.status === 'gone';
-  const className = isGone ? 'text-error' : 'text-brand';
-
-  const types = {
-    camera: (
-      <Icons
-        name={isGone ? 'IconVideoOff' : 'IconVideo'}
-        className={className}
-      />
-    ),
-    microphone: (
-      <Icons
-        name={isGone ? 'IconMicrophone2Off' : 'IconMicrophone2'}
-        className={className}
-      />
-    ),
-    graphics: (
-      <Icons
-        name={isGone ? 'IconVectorOff' : 'IconVector'}
-        className={className}
-      />
-    )
-  };
-
-  return types[source.type];
-};
-
-function InventoryListItem({
+function SourceListItem({
   source,
   action,
   disabled,
-  edit = false
+  locked,
+  actionText
 }: SourceListItemProps) {
   const t = useTranslate();
-  const [previewVisible, setPreviewVisible] = useState<boolean>(false);
+
   const [outputRows, setOutputRows] = useState<
     { id: string; value: string }[][]
   >([]);
-  const timeoutRef = useRef<NodeJS.Timeout>();
 
   const { video_stream: videoStream, audio_stream: audioStream } = source;
   const { width, height, frame_rate: frameRate } = videoStream || {};
   const { sample_rate: sampleRate, number_of_channels: numberOfChannels = 0 } =
     audioStream || {};
-
-  useEffect(() => {
-    return () => clearTimeout(timeoutRef.current);
-  }, []);
-
-  const onMouseEnter = useCallback(() => {
-    timeoutRef.current = setTimeout(() => setPreviewVisible(true), 1000);
-  }, []);
-
-  const onMouseLeave = useCallback(() => {
-    setPreviewVisible(false);
-    clearTimeout(timeoutRef.current);
-  }, []);
 
   const style = { textWrap: 'wrap' } as React.CSSProperties;
 
@@ -95,22 +54,19 @@ function InventoryListItem({
           : []
       );
     }
-  }, [source.audio_stream.audio_mapping]);
+  }, [source?.audio_stream.audio_mapping]);
 
   return (
     <li
-      className={`relative w-full items-center border-b border-gray-600 ${
+      className={`w-full items-center border-b border-gray-600 ${
         disabled ? 'bg-unclickable-bg' : 'hover:bg-zinc-700'
-      }`}
-      onMouseEnter={onMouseEnter}
-      onMouseLeave={onMouseLeave}
+      } ${disabled || !action ? '' : 'hover:cursor-pointer'}`}
+      style={{ boxSizing: 'border-box' }}
+      onClick={() => (disabled || !action ? '' : action(source))}
     >
-      {source.status !== 'gone' &&
-        source.type === 'camera' &&
-        previewVisible && <PreviewThumbnail src={getSourceThumbnail(source)} />}
       <div className="flex">
-        <div className="flex flex-row flex-1 items-center space-x-4 p-3 sm:pb-4 ">
-          <div className="flex flex-row">{getIcon(source)}</div>
+        <div className="flex flex-row flex-1 items-center space-x-4 p-3 sm:pb-4">
+          <SourceListItemThumbnail source={source} />
           <div
             style={style}
             className={`flex flex-col ${
@@ -169,6 +125,7 @@ function InventoryListItem({
                       outputRows={outputRows}
                       rowIndex={rowIndex}
                       max={channelsInArray[channelsInArray.length - 1]}
+                      locked={locked}
                     />
                   </div>
                 ))}
@@ -176,37 +133,29 @@ function InventoryListItem({
             ) : null}
           </div>
         </div>
-        <div className="flex justify-center items-center	">
-          {!disabled ? (
-            <div className="relative w-full mr-4">
-              <button
-                className={`flex flex-row min-w-full items-center justify-center m-1 p-1 rounded-lg ${
-                  disabled
-                    ? 'text-unclickable-text'
-                    : 'text-brand hover:bg-zinc-500'
-                } bg-zinc-600`}
-                onClick={() => (disabled ? '' : action(source))}
-              >
-                <div
-                  className={`flex items-center overflow-hidden mr-6 ${
-                    disabled ? 'text-unclickable-text' : 'text-brand'
-                  } text-xs`}
-                >
-                  {edit ? t('inventory_list.edit') : t('inventory_list.add')}
-                </div>
-                <Icons
-                  name="IconArrowRight"
-                  className={`absolute ${
-                    disabled ? 'text-unclickable-text' : 'text-brand'
-                  } right-2 w-4`}
-                />
-              </button>
-            </div>
-          ) : null}
+        <div className="flex justify-center items-center relative">
+          {actionText === 'edit' && (
+            <Icons
+              name="IconPencil"
+              className={`absolute ${
+                disabled ? 'text-unclickable-text' : 'text-brand'
+              } r
+              top-4 right-2 w-6`}
+            />
+          )}
+          {actionText === 'add' && (
+            <Icons
+              name="IconPlus"
+              className={`absolute ${
+                disabled ? 'text-unclickable-text' : 'text-brand'
+              } r
+              top-4 right-2 w-6`}
+            />
+          )}
         </div>
       </div>
     </li>
   );
 }
 
-export default InventoryListItem;
+export default SourceListItem;

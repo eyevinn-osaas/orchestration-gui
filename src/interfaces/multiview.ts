@@ -5,7 +5,14 @@ export interface MultiviewViews {
   height: number;
   width: number;
   label: string;
+  id?: string;
 }
+
+export type TListSource = {
+  id: string;
+  input_slot: number;
+  label: string;
+};
 
 export interface MultiviewOutputSettings {
   format: string;
@@ -18,11 +25,12 @@ export interface MultiviewOutputSettings {
   srt_mode: string;
   srt_latency_ms: number;
   srt_passphrase: string;
+  srt_stream_id: string;
   video_format: string;
   video_kilobit_rate: number;
 }
 
-export interface MultiviewLayout {
+export interface MultiviewStructureLayout {
   output_height: number;
   output_width: number;
   views: MultiviewViews[];
@@ -33,6 +41,7 @@ export interface MultiviewSettings {
   multiview_id?: number;
   for_pipeline_idx: number;
   name: string;
-  layout: MultiviewLayout;
+  layout: MultiviewStructureLayout;
   output: MultiviewOutputSettings;
+  _id?: string;
 }

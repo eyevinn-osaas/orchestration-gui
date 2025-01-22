@@ -6,8 +6,8 @@ import {
 } from '../interfaces/Source';
 import { Production } from '../interfaces/production';
 import { CallbackHook } from './types';
-import { MultiviewSettings } from '../interfaces/multiview';
 import { Result } from '../interfaces/result';
+import { API_SECRET_KEY } from '../utils/constants';
 
 export function useCreateStream(): CallbackHook<
   (
@@ -24,16 +24,15 @@ export function useCreateStream(): CallbackHook<
     input_slot: number
   ): Promise<Result<AddSourceResult>> => {
     setLoading(true);
-    const stream = {
-      source: source,
-      input_slot: input_slot
-    };
 
     return fetch(`/api/manager/streams/`, {
       method: 'POST',
-      // TODO: Implement api key
-      headers: [['x-api-key', `Bearer apisecretkey`]],
-      body: JSON.stringify({ ...stream, production: production })
+      headers: [['x-api-key', `Bearer ${API_SECRET_KEY}`]],
+      body: JSON.stringify({
+        source: source,
+        production: production,
+        input_slot: input_slot
+      })
     })
       .then(async (response) => {
         if (response.ok) {
@@ -76,8 +75,7 @@ export function useDeleteStream(): CallbackHook<
       const streamRequests = streamUuids.map((streamUuid) => {
         return fetch(`/api/manager/streams/${streamUuid}`, {
           method: 'DELETE',
-          // TODO: Implement api key
-          headers: [['x-api-key', `Bearer apisecretkey`]],
+          headers: [['x-api-key', `Bearer ${API_SECRET_KEY}`]],
           body: JSON.stringify({
             pipelineUUID: pipelineUUID
           })
@@ -138,27 +136,11 @@ export function useDeleteStream(): CallbackHook<
       };
     }
 
-    const multiviewsWithLabels = [...restWithLabels, ...updatedMultiviews];
-
-    const multiview: MultiviewSettings[] = multiviews.map(
-      (singleMultiview, index) => ({
-        ...singleMultiview,
-        layout: {
-          ...singleMultiview.layout,
-          views: multiviewsWithLabels
-        },
-        for_pipeline_idx: index,
-        multiviewId: index + 1
-      })
-    );
-
     const streamRequests = streamUuids.map((streamUuid) => {
       return fetch(`/api/manager/streams/${streamUuid}`, {
         method: 'DELETE',
-        // TODO: Implement api key
-        headers: [['x-api-key', `Bearer apisecretkey`]],
+        headers: [['x-api-key', `Bearer ${API_SECRET_KEY}`]],
         body: JSON.stringify({
-          multiview: multiview,
           pipelineUUID: pipelineUUID
         })
       });
@@ -184,4 +166,36 @@ export function useDeleteStream(): CallbackHook<
     };
   };
   return [deleteStream, loading];
+}
+
+export function useUpdateStream(): CallbackHook<
+  (streamUuid: string, alignment_ms: number) => void
+> {
+  const [loading, setLoading] = useState(false);
+
+  const updateStream = async (
+    streamUuid: string,
+    alignment_ms: number
+  ): Promise<void> => {
+    setLoading(true);
+    const response = await fetch(`/api/manager/streams/${streamUuid}`, {
+      method: 'PATCH',
+      headers: [['x-api-key', `Bearer ${API_SECRET_KEY}`]],
+      body: JSON.stringify({ alignment_ms: alignment_ms })
+    });
+
+    setLoading(false);
+
+    if (response.status === 204) {
+      return;
+    }
+
+    if (response.ok) {
+      return await response.json();
+    }
+
+    throw await response.text();
+  };
+
+  return [updateStream, loading];
 }

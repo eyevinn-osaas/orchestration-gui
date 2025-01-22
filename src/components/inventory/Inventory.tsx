@@ -1,26 +1,39 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useSources } from '../../hooks/sources/useSources';
+import { useSources, useUpdateSources } from '../../hooks/sources/useSources';
 import { useSetSourceToPurge } from '../../hooks/sources/useSetSourceToPurge';
-import FilterOptions from '../../components/filter/FilterOptions';
-import SourceListItem from '../../components/sourceListItem/SourceListItem';
-import { SourceWithId } from '../../interfaces/Source';
+import { SourceWithId, SrtSource } from '../../interfaces/Source';
 import EditView from './editView/EditView';
-import FilterContext from './FilterContext';
-import styles from './Inventory.module.scss';
+import SourceList from '../sourceList/SourceList';
+import { useTranslate } from '../../i18n/useTranslate';
+import { useRemoveInventorySourceItem } from '../../hooks/sources/useRemoveInventorySource';
+import { useCreateSrtSource } from '../../hooks/sources/useCreateSrtSource';
+import { AddSrtModal } from '../modal/addSrtModal/AddSrtModal';
+import { IconReload } from '@tabler/icons-react';
+import { Loader } from '../loader/Loader';
 
-export default function Inventory() {
-  const [removeInventorySource, reloadList] = useSetSourceToPurge();
+export default function Inventory({ locked }: { locked: boolean }) {
+  const [showSrtModal, setShowSrtModal] = useState<boolean>(false);
   const [updatedSource, setUpdatedSource] = useState<
     SourceWithId | undefined
   >();
-  const [sources] = useSources(reloadList, updatedSource);
+  const [refreshKey, setRefreshKey] = useState<number>(0);
   const [currentSource, setCurrentSource] = useState<SourceWithId | null>();
-  const [filteredSources, setFilteredSources] =
-    useState<Map<string, SourceWithId>>(sources);
+  const [isCreateSuccessful, setIsCreateSuccessful] = useState<boolean>(false);
 
-  const inventoryVisible = true;
+  const [purgeInventorySource, reloadList] = useSetSourceToPurge();
+  const [removeInventorySourceItem, reloadInventoryList] =
+    useRemoveInventorySourceItem();
+  const [createSrtSource, reloadSourceList] = useCreateSrtSource();
+  const [sources, loadingSources] = useSources(
+    reloadList || reloadInventoryList || reloadSourceList || !!refreshKey,
+    updatedSource,
+    refreshKey
+  );
+  const [updateSources, updateSourcesLoading] = useUpdateSources();
+  const [createSrtError, setCreateSrtError] = useState<string>('');
+  const t = useTranslate();
 
   useEffect(() => {
     if (updatedSource && typeof updatedSource !== 'boolean') {
@@ -29,77 +42,109 @@ export default function Inventory() {
   }, [updatedSource]);
 
   useEffect(() => {
-    if (reloadList) {
+    if (reloadList || reloadInventoryList) {
       setCurrentSource(null);
     }
-  }, [reloadList]);
+  }, [reloadList, reloadInventoryList]);
 
   const editSource = (source: SourceWithId) => {
-    setCurrentSource(() => source);
+    setCurrentSource(source);
   };
 
-  function getSourcesToDisplay(
-    filteredSources: Map<string, SourceWithId>
-  ): React.ReactNode {
-    return Array.from(filteredSources.values()).map((source, index) => {
-      if (source.status !== 'purge') {
-        return (
-          <SourceListItem
-            edit
-            key={`${source.ingest_source_name}-${index}`}
-            source={source}
-            disabled={false}
-            action={(source) => {
-              editSource(source);
-            }}
-          />
+  const handleCreateSrtSource = (
+    ingestUuid: string,
+    srtPayload: SrtSource,
+    callback: () => void
+  ) => {
+    setCreateSrtError('');
+    createSrtSource(ingestUuid, srtPayload)
+      .then(() => {
+        callback();
+      })
+      .finally(() => {
+        setIsCreateSuccessful(true);
+      })
+      .catch((e) => {
+        const errorMessageString = String(e.message);
+        const isErrorMessageStringUndefined =
+          errorMessageString === 'undefined';
+        setCreateSrtError(
+          t('inventory_list.generic_error') +
+            (isErrorMessageStringUndefined ? '' : ': ' + errorMessageString)
         );
-      }
-    });
-  }
+      });
+  };
+
+  const handleRefreshInventory = async () => {
+    await updateSources();
+    setRefreshKey((prev) => prev + 1);
+  };
+
+  const handleCloseModal = () => {
+    setCreateSrtError('');
+    setShowSrtModal(false);
+  };
 
   return (
-    <FilterContext sources={sources}>
-      <div className="flex h-[93%] flex-row">
-        <div
-          className={
-            inventoryVisible
-              ? `${
-                  styles.no_scrollbar
-                }  min-w-fit overflow-hidden max-w-2xl transition-[width] ml-2 mt-2 max-h-[89vh]
-          ${currentSource ? 'w-[30%]' : 'w-[50%]'}`
-              : 'hidden'
-          }
+    <>
+      <div className="flex flex-row space-x-4">
+        <button
+          disabled={locked}
+          className={`${
+            locked
+              ? 'pointer-events-none bg-button-bg/50'
+              : 'bg-button-bg hover:bg-button-hover-bg'
+          } text-button-text font-bold py-2 px-4 rounded inline-flex items-center ml-2 w-fit`}
+          onClick={() => {
+            setIsCreateSuccessful(false);
+            setShowSrtModal(true);
+          }}
         >
-          <div className="p-3 bg-container rounded break-all h-full">
-            <div className="mb-1">
-              <FilterOptions
-                onFilteredSources={(filtered: Map<string, SourceWithId>) =>
-                  setFilteredSources(new Map<string, SourceWithId>(filtered))
-                }
-              />
-            </div>
-            <ul
-              className={`flex flex-col border-t border-gray-600 overflow-scroll h-[95%] ${styles.no_scrollbar}`}
-            >
-              {getSourcesToDisplay(filteredSources)}
-            </ul>
+          {t('inventory_list.create_srt')}
+        </button>
+        <button
+          className="bg-zinc-600 px-2 rounded hover:bg-zinc-500"
+          onClick={handleRefreshInventory}
+        >
+          <div className="flex flex-row space-x-2">
+            <p className="text-p font-semibold">
+              {t('inventory_list.refresh_inventory')}
+            </p>
+            {updateSourcesLoading || loadingSources ? (
+              <Loader />
+            ) : (
+              <IconReload color="white" />
+            )}
           </div>
-        </div>
-
+        </button>
+      </div>
+      <div className="flex h-full">
+        <SourceList
+          sources={sources}
+          action={editSource}
+          actionText={'edit'}
+          locked={locked}
+        />
         {currentSource ? (
-          <div
-            className={`p-3 ml-2 mt-2 bg-container rounded h-[60%] min-w-max`}
-          >
+          <div className={`ml-2 mt-2 rounded self-start`}>
             <EditView
+              locked={locked}
               source={currentSource}
               updateSource={(source) => setUpdatedSource(source)}
               close={() => setCurrentSource(null)}
-              removeInventorySource={(source) => removeInventorySource(source)}
+              purgeInventorySource={purgeInventorySource}
+              removeInventorySourceItem={removeInventorySourceItem}
             />
           </div>
         ) : null}
       </div>
-    </FilterContext>
+      <AddSrtModal
+        createSrtError={createSrtError}
+        open={showSrtModal}
+        onConfirm={handleCreateSrtSource}
+        onAbort={handleCloseModal}
+        createSrtSuccessful={isCreateSuccessful}
+      />
+    </>
   );
 }
